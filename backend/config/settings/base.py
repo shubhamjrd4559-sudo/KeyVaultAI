@@ -13,6 +13,8 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "apps.common",
+    "apps.users",   # Milestone 2 — Authentication
+    "apps.audit",   # Milestone 2 — Audit logging
 ]
 
 MIDDLEWARE = [
@@ -37,11 +39,18 @@ CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_TIME_LIMIT = 300
 
+# JWT — secret falls back to DJANGO_SECRET_KEY when JWT_SECRET_KEY is not set.
+# Always configure a separate JWT_SECRET_KEY in production.
+JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", SECRET_KEY)
+
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
-    # Authentication is introduced in Milestone 2. Avoid importing Django auth
-    # models for public, unauthenticated foundation endpoints.
+    # Custom JWT authentication introduced in Milestone 2.
+    # Per-view overrides (authentication_classes = []) bypass this for public endpoints.
+    "DEFAULT_AUTHENTICATION_CLASSES": ["apps.users.authentication.JWTAuthentication"],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
+    # Avoids importing Django's built-in auth models (not installed).
     "UNAUTHENTICATED_USER": None,
 }
 
