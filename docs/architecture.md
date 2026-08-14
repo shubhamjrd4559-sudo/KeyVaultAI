@@ -86,8 +86,7 @@ Refresh  → Decode refresh JWT → Validate JTI in MongoDB
 
 ## Planned apps (future milestones)
 
-`users`, `vault`, `security`, `ai_engine`, `ml_engine`, `browser_extension`
-(separate from `apps.users` which covers authentication only)
+`apps.vault` is implemented for Milestone 3 with owner-scoped MongoDB credential access, AES-256-GCM encryption, and DRF endpoints. `security`, `ai_engine`, `ml_engine`, and `browser_extension` remain planned.
 
 ## Current file tree
 

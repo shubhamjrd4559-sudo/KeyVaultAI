@@ -15,6 +15,7 @@ INSTALLED_APPS = [
     "apps.common",
     "apps.users",   # Milestone 2 — Authentication
     "apps.audit",   # Milestone 2 — Audit logging
+    "apps.vault",   # Milestone 3 — Secure Password Vault
 ]
 
 MIDDLEWARE = [
@@ -63,3 +64,9 @@ X_FRAME_OPTIONS = "DENY"
 
 JWT_ACCESS_TOKEN_LIFETIME = timedelta(seconds=int(os.environ.get("JWT_ACCESS_TOKEN_LIFETIME", "300")))
 JWT_REFRESH_TOKEN_LIFETIME = timedelta(seconds=int(os.environ.get("JWT_REFRESH_TOKEN_LIFETIME", "2592000")))
+
+# AES-256-GCM credential encryption key.
+# Must be a base64url-encoded 32-byte key (i.e. base64url(os.urandom(32))).
+# It is required for vault encryption operations in every environment.
+# Consider a KMS for production key rotation.
+ENCRYPTION_KEY = os.environ.get("ENCRYPTION_KEY", "")

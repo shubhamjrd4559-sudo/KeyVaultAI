@@ -27,6 +27,9 @@ RATE_LIMIT_LOGIN = "login"
 RATE_LIMIT_REGISTER = "register"
 RATE_LIMIT_REFRESH = "refresh"
 RATE_LIMIT_PASSWORD_RESET = "password_reset"
+# Vault sensitive operations (Milestone 3)
+RATE_LIMIT_REVEAL = "credential_reveal"
+RATE_LIMIT_COPY = "credential_copy"
 
 # (max_attempts, window_seconds)
 _LIMITS: dict[str, tuple[int, int]] = {
@@ -34,6 +37,8 @@ _LIMITS: dict[str, tuple[int, int]] = {
     RATE_LIMIT_REGISTER: (5, 3600),        # 5 registrations per hour
     RATE_LIMIT_REFRESH: (30, 300),         # 30 refreshes per 5 min
     RATE_LIMIT_PASSWORD_RESET: (3, 3600),  # 3 resets per hour
+    RATE_LIMIT_REVEAL: (20, 300),          # 20 reveals per 5 min per key
+    RATE_LIMIT_COPY: (30, 300),            # 30 copies per 5 min per key
 }
 
 

@@ -145,7 +145,7 @@ Returns `503` — email infrastructure not yet implemented.
 
 ---
 
-## Planned — not yet implemented
+## Milestone 3 vault API — implemented
 
 - `POST /api/v1/vault/credentials/`
 - `GET  /api/v1/vault/credentials/`
@@ -154,6 +154,10 @@ Returns `503` — email infrastructure not yet implemented.
 - `DELETE /api/v1/vault/credentials/{id}/`
 - `POST /api/v1/vault/credentials/{id}/reveal/`
 - `POST /api/v1/vault/credentials/{id}/copy/`
+
+All vault routes require a JWT bearer token. Credential list and detail responses exclude plaintext passwords and encrypted ciphertext. Reveal and copy return a plaintext password only to the authenticated owner, are rate-limit-hooked, and generate audit events. MongoDB must be configured for live persistence.
+
+## Planned — not yet implemented
 - `GET  /api/v1/security/dashboard/`
 - `GET  /api/v1/security/score/`
 - `GET  /api/v1/security/alerts/`

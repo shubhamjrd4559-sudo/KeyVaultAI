@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 class AuditEvent:
     """Enum-like constants for audit event types."""
 
+    # Authentication events (Milestone 2)
     REGISTER = "REGISTER"
     LOGIN = "LOGIN"
     LOGIN_FAILED = "LOGIN_FAILED"
@@ -30,6 +31,15 @@ class AuditEvent:
     PASSWORD_RESET_REQUEST = "PASSWORD_RESET_REQUEST"
     EMAIL_VERIFIED = "EMAIL_VERIFIED"
     ACCOUNT_DISABLED = "ACCOUNT_DISABLED"
+
+    # Vault events (Milestone 3)
+    CREDENTIAL_CREATED = "CREDENTIAL_CREATED"
+    CREDENTIAL_UPDATED = "CREDENTIAL_UPDATED"
+    CREDENTIAL_DELETED = "CREDENTIAL_DELETED"
+    CREDENTIAL_VIEWED = "CREDENTIAL_VIEWED"
+    PASSWORD_REVEALED = "PASSWORD_REVEALED"
+    PASSWORD_COPIED = "PASSWORD_COPIED"
+
 
 
 class AuditService:

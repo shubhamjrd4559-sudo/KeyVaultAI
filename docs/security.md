@@ -28,8 +28,8 @@
 |---|---|
 | Email verification | NOT IMPLEMENTED (M4/M5) |
 | Password reset emails | NOT IMPLEMENTED (M4/M5) |
-| AES-256-GCM credential encryption | NOT IMPLEMENTED (M3) |
-| Vault access controls | NOT IMPLEMENTED (M3) |
+| AES-256-GCM credential encryption | IMPLEMENTED (M3); `ENCRYPTION_KEY` must be a base64url-encoded 32-byte key and has no fallback |
+| Vault access controls | IMPLEMENTED (M3); credential access is scoped to JWT user ID |
 | Security engine / breach detection | NOT IMPLEMENTED (M5) |
 | ML threat detection | NOT IMPLEMENTED (M6) |
 | NVIDIA NIM | NOT IMPLEMENTED (M7) |

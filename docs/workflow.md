@@ -29,11 +29,11 @@ Implemented:
 - Identity spoofing prevention (JWT-only user_id)
 - Full pytest suite (2 Milestone 1 + 30+ Milestone 2 tests)
 
-## Next — Milestone 3: Secure Password Vault
+## Milestone 3 — Secure Password Vault: IMPLEMENTED
 
 - AES-256-GCM credential encryption
 - Vault CRUD endpoints (create, read, update, delete, reveal, copy)
-- Per-user key derivation
+- Per-user key derivation (planned hardening; current encryption uses configured `ENCRYPTION_KEY`)
 - Vault access control (must verify request.user.user_id)
 
 Work continues in the existing KeyVaultAI workspace.
