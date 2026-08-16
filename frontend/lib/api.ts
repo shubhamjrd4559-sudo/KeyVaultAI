@@ -1,5 +1,5 @@
 import { tokenStore } from "@/lib/auth";
-import type { ApiError, AuthTokens, Credential } from "@/types";
+import type { ApiError, AuthTokens, Credential, CredentialSecurity, SecuritySummary } from "@/types";
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1").replace(/\/$/, "");
 
@@ -33,7 +33,10 @@ export const api = {
   updateCredential: (access: string, id: string, data: Record<string, unknown>) => request<{ credential: Credential }>(`/vault/credentials/${id}/`, { method: "PATCH", body: JSON.stringify(data) }, access),
   deleteCredential: (access: string, id: string) => request<{ detail: string }>(`/vault/credentials/${id}/`, { method: "DELETE" }, access),
   reveal: (access: string, id: string) => request<{ password: string }>(`/vault/credentials/${id}/reveal/`, { method: "POST" }, access),
-  copy: (access: string, id: string) => request<{ password: string }>(`/vault/credentials/${id}/copy/`, { method: "POST" }, access)
+  copy: (access: string, id: string) => request<{ password: string }>(`/vault/credentials/${id}/copy/`, { method: "POST" }, access),
+  // M5 Security Engine
+  securitySummary: (access: string) => request<{ summary: SecuritySummary }>("/security/summary/", {}, access),
+  securityCredentials: (access: string) => request<{ credentials: CredentialSecurity[]; count: number }>("/security/credentials/", {}, access),
 };
 
 export async function withRefresh<T>(operation: (access: string) => Promise<T>): Promise<T> {

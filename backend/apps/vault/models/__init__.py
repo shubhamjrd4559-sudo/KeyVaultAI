@@ -11,6 +11,7 @@ Security invariants enforced here:
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+import re
 from typing import Optional
 
 
@@ -65,7 +66,20 @@ def score_password(password: str) -> tuple[int, str]:
     if unique_count >= 14:
         score += 10
 
-    score = min(score, 100)
+    # Predictable patterns reduce resistance to guessing even when a password
+    # otherwise meets length and character-class checks.  These are intentionally
+    # small, deterministic heuristics—not a breach lookup or external service.
+    normalized = password.casefold()
+    pattern_penalty = 0
+    if any(term in normalized for term in ("password", "qwerty", "letmein", "welcome", "admin")):
+        pattern_penalty += 25
+    if re.search(r"(.)\1{3,}", password):
+        pattern_penalty += 15
+    if any(sequence in normalized for sequence in ("abcd", "bcde", "cdef", "1234", "2345", "3456", "4567", "5678", "6789", "9876", "8765", "7654", "6543", "5432", "4321")):
+        pattern_penalty += 15
+    score -= min(pattern_penalty, 35)
+
+    score = max(0, min(score, 100))
 
     if score >= 80:
         level = "very_strong"

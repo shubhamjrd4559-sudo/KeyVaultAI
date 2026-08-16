@@ -5,6 +5,8 @@ Client → Django REST API (/api/v1)
               ├→ apps.common   — health probe
               ├→ apps.users    — authentication (JWT + Argon2id + MongoDB)
               ├→ apps.audit    — audit event logging
+              ├→ apps.vault    — owner-scoped AES-256-GCM credentials
+              ├→ apps.security — deterministic security analysis
               ├→ MongoDB Atlas (primary persistent store)
               │     ├─ users collection        (user accounts)
               │     ├─ refresh_tokens collection (JTI revocation)
@@ -76,17 +78,19 @@ Refresh  → Decode refresh JWT → Validate JTI in MongoDB
 - Present for Django framework internals
 - Not used for application data
 
-## Installed apps — Milestone 2
+## Installed apps — Milestone 5
 
 | App | Purpose |
 |---|---|
 | `apps.common` | Health probe, shared database factory |
 | `apps.users` | Authentication: register, login, logout, token refresh |
 | `apps.audit` | Security event logging |
+| `apps.vault` | Encrypted, owner-scoped credential storage |
+| `apps.security` | JWT-scoped score summary, safe alerts, and same-user reuse analysis |
 
 ## Planned apps (future milestones)
 
-`apps.vault` is implemented for Milestone 3 with owner-scoped MongoDB credential access, AES-256-GCM encryption, and DRF endpoints. `security`, `ai_engine`, `ml_engine`, and `browser_extension` remain planned.
+`apps.vault` is implemented for Milestone 3 with owner-scoped MongoDB credential access and AES-256-GCM encryption. `apps.security` (M5) reads its safe metadata and transient encrypted-password projection to produce in-memory, same-user-only reuse analysis. `ai_engine`, `ml_engine`, and `browser_extension` remain planned.
 
 ## Current file tree
 

@@ -30,7 +30,8 @@
 | Password reset emails | NOT IMPLEMENTED (M4/M5) |
 | AES-256-GCM credential encryption | IMPLEMENTED (M3); `ENCRYPTION_KEY` must be a base64url-encoded 32-byte key and has no fallback |
 | Vault access controls | IMPLEMENTED (M3); credential access is scoped to JWT user ID |
-| Security engine / breach detection | NOT IMPLEMENTED (M5) |
+| Deterministic security engine | IMPLEMENTED (M5); local strength scoring, same-user reuse detection, safe alerts, and JWT-scoped APIs |
+| External breach / compromised-password lookup | NOT IMPLEMENTED |
 | ML threat detection | NOT IMPLEMENTED (M6) |
 | NVIDIA NIM | NOT IMPLEMENTED (M7) |
 | Browser extension | NOT IMPLEMENTED (M8) |
@@ -71,3 +72,9 @@ When Redis is unavailable, `NullRateLimiter` allows all requests and emits a WAR
 - Health probe uses a bounded 1s timeout and never returns connection strings.
 - User email is normalized (lowercased, stripped) before storage and lookup.
 - Duplicate email detection uses a unique index, not application-level SELECT.
+
+## Milestone 5 security engine
+
+- Password strength is scored deterministically from length, character classes, uniqueness, and bounded penalties for common or sequential patterns.
+- Stored credential score/level metadata is reused; password reuse is checked only within the authenticated user's vault by transiently decrypting and comparing in-memory SHA-256 digests.
+- Security responses expose only credential metadata, normalized scores, levels, reuse flags, and fixed alert labels. They never expose plaintext passwords, ciphertext, digest values, or keys.

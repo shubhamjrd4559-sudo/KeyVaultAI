@@ -157,8 +157,13 @@ Returns `503` — email infrastructure not yet implemented.
 
 All vault routes require a JWT bearer token. Credential list and detail responses exclude plaintext passwords and encrypted ciphertext. Reveal and copy return a plaintext password only to the authenticated owner, are rate-limit-hooked, and generate audit events. MongoDB must be configured for live persistence.
 
+## Milestone 5 security API — implemented
+
+- `GET /api/v1/security/summary/` returns the authenticated user's credential totals by security level, reused-credential count, average score, overall score, and overall level.
+- `GET /api/v1/security/credentials/` returns safe per-credential score, level, reuse flag, and alert labels.
+
+Both routes require a JWT bearer token, scope all queries to its user ID, and never return plaintext passwords, ciphertext, or encryption keys. A temporarily unavailable vault dependency returns `503` with a generic message.
+
 ## Planned — not yet implemented
-- `GET  /api/v1/security/dashboard/`
-- `GET  /api/v1/security/score/`
-- `GET  /api/v1/security/alerts/`
+
 - `POST /api/v1/ai/query/`

@@ -236,3 +236,34 @@ class CredentialRepository:
             raise CredentialNotFoundError(
                 f"Credential not found: {credential_id}"
             )
+
+    # ── Security analysis ─────────────────────────────────────────────────────
+
+    def find_all_encrypted_for_user(self, user_id: str) -> list[dict]:
+        """Return minimal credential data needed for password-reuse detection.
+
+        Returns a list of dicts with ONLY:
+          - credential_id (str)
+          - encrypted_password (str)
+
+        SECURITY INVARIANTS:
+        - ALWAYS scoped to user_id — cross-user access is impossible.
+        - Returns ONLY encrypted_password and credential_id — no other fields.
+        - Caller (SecurityAnalyzer.detect_reuse) decrypts transiently and
+          immediately hashes the result. Hashes are discarded after use.
+        - This method MUST NOT be called from any endpoint that returns
+          the encrypted ciphertext to clients.
+
+        Called exclusively by the Security Engine for reuse analysis.
+        NEVER expose the return value directly in an API response.
+        """
+        projection = {"_id": 0, "credential_id": 1, "encrypted_password": 1}
+        try:
+            return list(
+                self._col.find({"user_id": user_id}, projection)
+            )
+        except Exception as exc:
+            logger.exception("Failed to fetch encrypted credentials for security analysis.")
+            raise CredentialRepositoryError(
+                "Failed to retrieve credentials for security analysis."
+            ) from exc

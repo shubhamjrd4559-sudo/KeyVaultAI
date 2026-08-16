@@ -13,10 +13,12 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "apps.common",
-    "apps.users",   # Milestone 2 — Authentication
-    "apps.audit",   # Milestone 2 — Audit logging
-    "apps.vault",   # Milestone 3 — Secure Password Vault
+    "apps.users",    # Milestone 2 — Authentication
+    "apps.audit",    # Milestone 2 — Audit logging
+    "apps.vault",    # Milestone 3 — Secure Password Vault
+    "apps.security", # Milestone 5 — Security Engine
 ]
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
