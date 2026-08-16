@@ -1,4 +1,4 @@
-# KeyVaultAI
+#Project KeyVaultAI
 
 Secure credential-management platform. The locked sticky-notes landing-page reference is preserved as `Gemini_Generated_Image_pi6ae1pi6ae1pi6a.png`; frontend implementation is intentionally deferred to Milestone 4.
 
