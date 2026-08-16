@@ -1,0 +1,223 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design tokens ─────────────────────────────────────────── */
+:root {
+  color-scheme: dark;
+  --font-inter: "Inter", sans-serif;
+  --bg-deep:    #031219;
+  --bg-card:    #071821;
+  --accent-pink: #f472b6;
+  --accent-cyan: #67e8f9;
+  --accent-violet: #818cf8;
+  --accent-green: #86efac;
+}
+
+/* ── Reset ─────────────────────────────────────────────────── */
+*  { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg-deep);
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+button, input, textarea, select { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent-pink);
+  outline-offset: 3px;
+}
+
+/* ── Animated gradient title ───────────────────────────────── */
+.gradient-title {
+  background: linear-gradient(
+    100deg,
+    var(--accent-cyan),
+    var(--accent-violet),
+    var(--accent-pink),
+    var(--accent-green)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  background-size: 250% auto;
+  animation: gradient-shift 7s ease infinite;
+}
+
+/* ── Cybersecurity grid background ────────────────────────── */
+.hero-grid {
+  background-color: var(--bg-deep);
+  background-image:
+    linear-gradient(rgba(85, 210, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(85, 210, 255, 0.07) 1px, transparent 1px);
+  background-size: 80px 80px;
+  position: relative;
+}
+
+/* Radial vignette overlay so grid fades toward edges */
+.hero-grid::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 35%, #031219 90%);
+  z-index: 0;
+}
+
+/* ── Notes wall ────────────────────────────────────────────── */
+.notes-wall {
+  grid-auto-rows: minmax(145px, 1fr);
+}
+
+.note {
+  min-height: 155px;
+  padding: 1.1rem;
+  border-radius: 4px;
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.note:hover {
+  transform: translateY(-4px) rotate(0deg) !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+
+/* Stagger vertical offsets to give a "pinned" look */
+.note:nth-child(5),
+.note:nth-child(8),
+.note:nth-child(10) {
+  transform: translateY(30px);
+}
+
+/* ── Note dot (first-letter circle) ───────────────────────── */
+.note-dot {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.45);
+  font-size: 0.8rem;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+/* ── Password dots strip ───────────────────────────────────── */
+.note-pwd {
+  margin-top: 0.55rem;
+  height: 1.35rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  gap: 3px;
+}
+.note-pwd span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+/* ── Form fields ───────────────────────────────────────────── */
+.field {
+  display: block;
+  width: 100%;
+  margin-top: 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.72rem 0.8rem;
+  color: white;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.field:focus {
+  border-color: rgba(244, 114, 182, 0.6);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+label {
+  display: block;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+}
+
+/* ── Glass cards ───────────────────────────────────────────── */
+.glass-card {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1.35rem;
+  background: linear-gradient(
+    135deg,
+    rgba(22, 57, 68, 0.82),
+    rgba(10, 25, 35, 0.78)
+  );
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(18px);
+}
+
+/* ── Credential cards ──────────────────────────────────────── */
+.credential-card {
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 1.2rem;
+  background: linear-gradient(
+    150deg,
+    rgba(29, 69, 82, 0.72),
+    rgba(7, 24, 33, 0.82)
+  );
+  padding: 1.25rem;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.credential-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(244, 114, 182, 0.55);
+}
+
+/* ── Icon buttons ──────────────────────────────────────────── */
+.icon-button {
+  display: grid;
+  place-items: center;
+  height: 2.1rem;
+  width: 2.1rem;
+  border-radius: 0.55rem;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 0.15s;
+}
+.icon-button:hover {
+  background: rgba(255, 255, 255, 0.17);
+}
+
+/* ── Keyframes ─────────────────────────────────────────────── */
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .notes-wall {
+    inset: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    opacity: 0.38;
+  }
+  .note {
+    min-height: 115px;
+    padding: 0.7rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .notes-wall {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    opacity: 0.5;
+  }
+}
