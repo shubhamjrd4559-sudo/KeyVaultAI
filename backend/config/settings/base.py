@@ -17,6 +17,7 @@ INSTALLED_APPS = [
     "apps.audit",    # Milestone 2 — Audit logging
     "apps.vault",    # Milestone 3 — Secure Password Vault
     "apps.security", # Milestone 5 — Security Engine
+    "apps.ml_engine", # Milestone 6 — ML Risk Prediction Engine
 ]
 
 

@@ -1,22 +1,23 @@
 "use client";
 
 /**
- * SecurityPanel — M5 Security Engine UI component.
+ * SecurityPanel — M5 Security Engine + M6 ML Risk Prediction UI component.
  *
  * Displays vault-wide security posture:
  *   - Overall score arc / badge
  *   - Level counts (very_strong / strong / fair / weak)
  *   - Reused credentials count
  *   - Per-credential alerts
+ *   - M6 ML risk level + confidence + explanation
  *
  * Security: never displays passwords or encrypted values.
- * All data comes from /api/v1/security/* endpoints.
+ * All data comes from /api/v1/security/* and /api/v1/ml/predict/ endpoints.
  */
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, LoaderCircle, RefreshCw, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react";
+import { AlertTriangle, BrainCircuit, CheckCircle2, LoaderCircle, RefreshCw, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react";
 import { api, withRefresh } from "@/lib/api";
-import type { CredentialSecurity, SecuritySummary } from "@/types";
+import type { CredentialSecurity, MLPrediction, SecuritySummary } from "@/types";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -38,6 +39,20 @@ const ALERT_LABELS: Record<string, string> = {
   weak_password:    "Weak password",
   reused_password:  "Password reused",
   low_security_score: "Low score",
+};
+
+// ── M6 ML Risk helpers ───────────────────────────────────────────────────────
+
+const ML_RISK_COLORS: Record<string, string> = {
+  LOW:    "#22c55e",
+  MEDIUM: "#facc15",
+  HIGH:   "#f43f5e",
+};
+
+const ML_RISK_LABELS: Record<string, string> = {
+  LOW:    "Low Risk",
+  MEDIUM: "Medium Risk",
+  HIGH:   "High Risk",
 };
 
 function ScoreArc({ score }: { score: number }) {
@@ -79,10 +94,13 @@ export function SecurityPanel() {
   const [loading, setLoading]               = useState(true);
   const [error, setError]                   = useState("");
   const [showAlerts, setShowAlerts]         = useState(false);
+  const [mlPrediction, setMlPrediction]     = useState<MLPrediction | null>(null);
+  const [mlLoading, setMlLoading]           = useState(false);
 
   async function loadSecurity() {
     setLoading(true);
     setError("");
+    setMlPrediction(null);
     try {
       const [sumData, credData] = await Promise.all([
         withRefresh(access => api.securitySummary(access)),
@@ -90,10 +108,30 @@ export function SecurityPanel() {
       ]);
       setSummary(sumData.summary);
       setCredentials(credData.credentials);
+      // M6: load ML risk prediction from the vault's overall score
+      void loadMlPrediction(sumData.summary);
     } catch (caught) {
       setError((caught as Error).message || "Security analysis unavailable.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadMlPrediction(sum: SecuritySummary) {
+    if (sum.total === 0) return;
+    setMlLoading(true);
+    try {
+      const result = await withRefresh(access => api.mlPredict(access, {
+        security_score: sum.overall_score,
+        security_level: sum.overall_level,
+        is_reused: sum.reused_count > 0,
+      }));
+      setMlPrediction(result);
+    } catch {
+      // ML prediction is best-effort — do not block M5 UI on ML failure
+      setMlPrediction(null);
+    } finally {
+      setMlLoading(false);
     }
   }
 
@@ -184,6 +222,40 @@ export function SecurityPanel() {
           </div>
         ))}
       </div>
+
+      {/* M6 ML Risk Prediction */}
+      {(mlLoading || mlPrediction) && (
+        <div
+          className="rounded-xl px-4 py-3 text-sm"
+          style={{
+            background: mlPrediction ? `${ML_RISK_COLORS[mlPrediction.risk_level]}11` : "rgba(255,255,255,0.04)",
+            border: `1px solid ${mlPrediction ? ML_RISK_COLORS[mlPrediction.risk_level] + "33" : "rgba(255,255,255,0.08)"}`,
+          }}
+          aria-label="ML Risk Prediction"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <BrainCircuit size={15} className="text-indigo-300 shrink-0" />
+            <span className="font-semibold text-slate-200 text-xs uppercase tracking-wide">ML Risk Prediction</span>
+            {mlLoading && <LoaderCircle size={12} className="animate-spin text-slate-400 ml-auto" />}
+          </div>
+          {mlPrediction && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span
+                  className="font-black text-sm"
+                  style={{ color: ML_RISK_COLORS[mlPrediction.risk_level] }}
+                >
+                  {ML_RISK_LABELS[mlPrediction.risk_level]}
+                </span>
+                <span className="text-xs text-slate-400">
+                  {(mlPrediction.confidence * 100).toFixed(0)}% confidence
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">{mlPrediction.explanation}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Stats row */}
       <div className="space-y-2 text-sm">

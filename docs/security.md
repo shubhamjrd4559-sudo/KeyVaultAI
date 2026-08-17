@@ -78,3 +78,13 @@ When Redis is unavailable, `NullRateLimiter` allows all requests and emits a WAR
 - Password strength is scored deterministically from length, character classes, uniqueness, and bounded penalties for common or sequential patterns.
 - Stored credential score/level metadata is reused; password reuse is checked only within the authenticated user's vault by transiently decrypting and comparing in-memory SHA-256 digests.
 - Security responses expose only credential metadata, normalized scores, levels, reuse flags, and fixed alert labels. They never expose plaintext passwords, ciphertext, digest values, or keys.
+
+## Milestone 6 ML engine privacy protections
+
+- **No plaintext passwords in ML training data.** The model is trained on a fully synthetic dataset of derived numerical features generated programmatically. No real user credentials are used.
+- **No persistent ML artifacts.** The model is trained in-memory at process startup and never serialized to disk, eliminating any risk of sensitive data in stored model files.
+- **ML operates only on safe derived features:** password length, character-class presence (0/1), character diversity ratio, repeat-run indicator, obvious-pattern indicator, M5 security score, and reuse flag.
+- **Plaintext cleared after feature extraction.** `extract_features()` sets its local plaintext reference to `None` immediately after deriving the feature vector.
+- **No external ML services.** The model runs locally via scikit-learn with no network calls, no GPU, no LLM, and no external API.
+- **user_id from JWT only.** When a `credential_id` is provided, the vault repository's owner-scoped lookup is used — the authenticated user's ID is never overridden by client-supplied data.
+- **Response never contains passwords, ciphertext, or keys.** The `MLPredictView` response is limited to `risk_level`, `confidence`, `explanation`, and `security_score`.

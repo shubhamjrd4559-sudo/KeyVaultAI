@@ -164,6 +164,49 @@ All vault routes require a JWT bearer token. Credential list and detail response
 
 Both routes require a JWT bearer token, scope all queries to its user ID, and never return plaintext passwords, ciphertext, or encryption keys. A temporarily unavailable vault dependency returns `503` with a generic message.
 
-## Planned — not yet implemented
+## Milestone 6 ML Engine API — implemented
 
-- `POST /api/v1/ai/query/`
+### `POST /api/v1/ml/predict/`  ✅ IMPLEMENTED
+
+Runs the M6 ML risk prediction engine on a password's derived features.
+
+**Authentication:** JWT bearer token required.
+
+**Request (score-based — no plaintext access):**
+```json
+{
+  "security_score": 55,
+  "security_level": "fair",
+  "is_reused": false
+}
+```
+
+**Request (credential-specific — accurate feature extraction):**
+```json
+{
+  "credential_id": "abc123"
+}
+```
+
+**Success (`200`):**
+```json
+{
+  "risk_level": "MEDIUM",
+  "confidence": 0.82,
+  "explanation": "Medium risk: no special characters, moderate score",
+  "security_score": 55
+}
+```
+
+- `risk_level` is one of `"LOW"`, `"MEDIUM"`, `"HIGH"`.
+- `confidence` is a probability in `[0.0, 1.0]`.
+- `explanation` is a safe human-readable string; never contains passwords.
+- Response never contains plaintext passwords, ciphertext, or encryption keys.
+- `user_id` is sourced exclusively from the validated JWT.
+- When `credential_id` is supplied, ownership is verified via vault repository before data is fetched.
+
+**Errors:**
+- `400` — invalid `security_score` (out of range) or unknown `security_level`.
+- `401` — missing or invalid JWT.
+- `404` — `credential_id` not found (or does not belong to authenticated user).
+- `503` — ML engine or vault service temporarily unavailable.

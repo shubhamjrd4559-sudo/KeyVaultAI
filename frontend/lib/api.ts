@@ -1,5 +1,5 @@
 import { tokenStore } from "@/lib/auth";
-import type { ApiError, AuthTokens, Credential, CredentialSecurity, SecuritySummary } from "@/types";
+import type { ApiError, AuthTokens, Credential, CredentialSecurity, MLPrediction, SecuritySummary } from "@/types";
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1").replace(/\/$/, "");
 
@@ -37,6 +37,9 @@ export const api = {
   // M5 Security Engine
   securitySummary: (access: string) => request<{ summary: SecuritySummary }>("/security/summary/", {}, access),
   securityCredentials: (access: string) => request<{ credentials: CredentialSecurity[]; count: number }>("/security/credentials/", {}, access),
+  // M6 ML Engine
+  mlPredict: (access: string, data: { security_score: number; security_level: string; is_reused?: boolean }) =>
+    request<MLPrediction>("/ml/predict/", { method: "POST", body: JSON.stringify(data) }, access),
 };
 
 export async function withRefresh<T>(operation: (access: string) => Promise<T>): Promise<T> {

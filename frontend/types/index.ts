@@ -41,3 +41,13 @@ export type CredentialSecurity = {
   is_reused: boolean;
   alerts: string[];
 };
+
+// M6 ML Engine types
+export type MLRiskLevel = "LOW" | "MEDIUM" | "HIGH";
+
+export type MLPrediction = {
+  risk_level: MLRiskLevel;
+  confidence: number;
+  explanation: string;
+  security_score: number;
+};

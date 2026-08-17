@@ -6,7 +6,8 @@ Client → Django REST API (/api/v1)
               ├→ apps.users    — authentication (JWT + Argon2id + MongoDB)
               ├→ apps.audit    — audit event logging
               ├→ apps.vault    — owner-scoped AES-256-GCM credentials
-              ├→ apps.security — deterministic security analysis
+              ├→ apps.security — deterministic security analysis (M5)
+              ├→ apps.ml_engine — ML risk prediction layer (M6)
               ├→ MongoDB Atlas (primary persistent store)
               │     ├─ users collection        (user accounts)
               │     ├─ refresh_tokens collection (JTI revocation)
@@ -105,5 +106,27 @@ backend/
   apps/users/services/{authentication,users,rate_limiting}.py
   apps/users/tests/{conftest,test_registration,test_login,test_tokens,test_security}.py
   apps/audit/services/audit.py
+  apps/security/services/analyzer.py
+  apps/security/{views,urls,apps}.py
+  apps/ml_engine/{features,dataset,model,views,urls,apps}.py  ← M6
+  apps/ml_engine/tests/test_ml_engine.py                       ← M6
   tests/test_health.py
 ```
+
+## M6 ML Engine architecture
+
+```
+M5 deterministic security analysis
+        ↓
+safe derived features (length, char classes, diversity, score, reuse)
+        ↓
+M6 LogisticRegression pipeline (sklearn, in-memory, synthetic training data)
+        ↓
+risk_level (LOW/MEDIUM/HIGH) + confidence + explanation
+        ↓
+frontend SecurityPanel ML Risk badge
+```
+
+**M5 vs M6 responsibilities:**
+- **M5 (SecurityAnalyzer):** Deterministic, rule-based. Produces `security_score` (0–100) and `security_level`. Detects reuse via SHA-256 hashes. Always runs.
+- **M6 (ML Engine):** Probabilistic, learned. Consumes M5's safe derived features. Produces `risk_level` + `confidence`. Operates only on numerical features — never on raw passwords.
