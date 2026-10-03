@@ -16,9 +16,11 @@ KeyVaultAI is a secure, modern password manager built as a full-stack B.Tech pro
 
 ## 📸 Screenshots
 
-### Landing Page & Dashboard Visual Style
+### Landing Page
+![KeyVaultAI Landing Page](docs/screenshots/landing_page.png)
 
-![KeyVaultAI Landing Page](Gemini_Generated_Image_pi6ae1pi6ae1pi6a.png)
+### Vault Dashboard
+![KeyVaultAI Vault Dashboard](docs/screenshots/vault_dashboard.png)
 
 *The user interface is designed with a warm light glassmorphic aesthetic (`#faf8f4`), pastel sticky-note credential cards with 3D push-pin accents, and soft radiant borders.*
 
