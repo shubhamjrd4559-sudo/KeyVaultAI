@@ -291,5 +291,13 @@ pytest -v
 
 ## 📜 License & Author
 
-- **Author**: Developed by **SK (Shubham Kumar)** — B.Tech Project.
-- **License**: Not yet specified.
+- Author: Developed by SK (Shubham Kumar) — Project
+- License: Not yet specified.
+
+### 🤝 Open Source Contributions
+
+KeyVaultAI is an open project, and contributors are welcome.
+
+If you are interested in improving the project, fixing bugs, adding features, improving documentation, or experimenting with new ideas, feel free to contribute.
+
+Pull requests, suggestions, and constructive feedback are welcome. Please keep contributions focused and follow the existing project structure and coding practices.
