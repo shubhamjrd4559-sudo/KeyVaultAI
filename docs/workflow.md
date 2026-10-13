@@ -21,10 +21,11 @@ Implemented:
 - `POST /api/v1/auth/login/` — JWT access + refresh tokens, rate limiting
 - `POST /api/v1/auth/logout/` — refresh token revocation (JTI)
 - `POST /api/v1/auth/token/refresh/` — token rotation
-- Scaffolded: verify-email, forgot-password, reset-password (503 responses)
+- Email verification, resend verification, forgot password, and reset password through configured Django SMTP; hashed expiring one-time tokens
 - apps.users layered architecture (views → services → repositories)
 - apps.audit foundation (REGISTER, LOGIN, LOGIN_FAILED, LOGOUT events)
-- Rate-limiting abstraction (Redis-backed / NullRateLimiter fallback)
+- Atomic Redis-backed rate limiting; rate-limited actions fail closed when Redis is unavailable
+- Registration requires email verification before login
 - Anti-enumeration responses
 - Identity spoofing prevention (JWT-only user_id)
 - Full pytest suite (2 Milestone 1 + 30+ Milestone 2 tests)

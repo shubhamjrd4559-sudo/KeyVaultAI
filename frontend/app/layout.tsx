@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   title: "KeyVault-AI | Secure AI Password Vault",
   description:
     "An encrypted AI-powered password vault with ML security scoring. Protect your digital identity with AES-256-GCM encryption.",
+  referrer: "no-referrer",
 };
 
 export default function RootLayout({

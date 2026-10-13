@@ -15,7 +15,7 @@
 | **JWT access + refresh tokens** | ✅ | HS256, type-embedded payloads |
 | **Refresh token revocation (JTI)** | ✅ | MongoDB `refresh_tokens` collection |
 | **Token rotation on refresh** | ✅ | Old JTI revoked before new pair issued |
-| **Rate limiting abstraction** | ✅ | Redis-backed; NullRateLimiter when unavailable |
+| **Rate limiting** | ✅ | Atomic Redis counter; fails closed when unavailable |
 | **Anti-enumeration responses** | ✅ | Wrong email/password → identical 401 |
 | **user_id from JWT only** | ✅ | LogoutView uses `request.user.user_id` |
 | **Audit logging foundation** | ✅ | REGISTER, LOGIN, LOGIN_FAILED, LOGOUT events |
@@ -26,8 +26,8 @@
 
 | Capability | Status |
 |---|---|
-| Email verification | NOT IMPLEMENTED (M4/M5) |
-| Password reset emails | NOT IMPLEMENTED (M4/M5) |
+| Email verification | IMPLEMENTED | Random single-use token; only SHA-256 hash stored; account remains pending until verified |
+| Password reset emails | IMPLEMENTED | Generic response, expiring token hash, and refresh-session revocation |
 | AES-256-GCM credential encryption | IMPLEMENTED (M3); `ENCRYPTION_KEY` must be a base64url-encoded 32-byte key and has no fallback |
 | Vault access controls | IMPLEMENTED (M3); credential access is scoped to JWT user ID |
 | Deterministic security engine | IMPLEMENTED (M5); local strength scoring, same-user reuse detection, safe alerts, and JWT-scoped APIs |
@@ -64,7 +64,9 @@ These meet OWASP's Argon2id minimum recommendation.
 - Token refresh: 30 per 5 minutes per IP
 - Password reset: 3 per hour per IP
 
-When Redis is unavailable, `NullRateLimiter` allows all requests and emits a WARNING log. Operators must start Redis to enable enforcement.
+When Redis is unavailable, rate-limited operations return service unavailable. Redis counters use a single atomic Lua operation. Production settings require TLS `rediss://`.
+
+Email verification tokens expire after `EMAIL_VERIFICATION_TOKEN_TTL_SECONDS` (default 24 hours); reset tokens expire after `PASSWORD_RESET_TOKEN_TTL_SECONDS` (default 30 minutes). Email uses configured Django SMTP. Links place tokens in URL fragments, which browsers do not send in HTTP requests; frontend pages remove the fragment after reading it.
 
 ## MongoDB security
 

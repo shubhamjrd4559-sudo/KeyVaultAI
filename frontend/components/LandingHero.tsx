@@ -8,10 +8,17 @@ import { ArrowRight, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
 
 function IconInstagram() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="url(#ig-grad)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <defs>
+        <linearGradient id="ig-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#f59e0b" />
+          <stop offset="50%" stopColor="#ec4899" />
+          <stop offset="100%" stopColor="#8b5cf6" />
+        </linearGradient>
+      </defs>
       <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
       <circle cx="12" cy="12" r="4" />
-      <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none" />
+      <circle cx="17.5" cy="6.5" r="0.8" fill="url(#ig-grad)" stroke="none" />
     </svg>
   );
 }
@@ -112,24 +119,25 @@ type NoteData = {
   name: string;
   color: string;
   textColor: string;
+  iconColor?: string;
   rotation: string;
   icon: React.ReactNode;
   slug: string;
 };
 
 const notes: NoteData[] = [
-  { name: "Instagram",  color: "#f7de42", textColor: "#111", rotation: "-4deg",  icon: <IconInstagram />,  slug: "instagram" },
-  { name: "Telegram",   color: "#f29bc9", textColor: "#111", rotation: "3deg",   icon: <IconTelegram />,   slug: "telegram"  },
-  { name: "Amazon",     color: "#79c7ee", textColor: "#111", rotation: "-2deg",  icon: <IconAmazon />,     slug: "amazon"    },
-  { name: "LinkedIn",   color: "#a4c9eb", textColor: "#0a2540", rotation: "2deg",icon: <IconLinkedIn />,   slug: "linkedin"  },
-  { name: "Netflix",    color: "#f5d540", textColor: "#111", rotation: "-2deg",  icon: <IconNetflix />,    slug: "netflix"   },
-  { name: "Google Mail",color: "#5bbbe5", textColor: "#111", rotation: "1deg",   icon: <IconGmail />,      slug: "gmail"     },
-  { name: "Spotify",    color: "#69db94", textColor: "#111", rotation: "-3deg",  icon: <IconSpotify />,    slug: "spotify"   },
-  { name: "Dropbox",    color: "#88c4ef", textColor: "#111", rotation: "4deg",   icon: <IconDropbox />,    slug: "dropbox"   },
-  { name: "Facebook",   color: "#e9e9ff", textColor: "#1c2c4c", rotation: "-2deg",icon: <IconFacebook />, slug: "facebook"  },
-  { name: "CodeChef",   color: "#f7db40", textColor: "#111", rotation: "2deg",   icon: <IconCodeChef />,   slug: "codechef"  },
-  { name: "Reddit",     color: "#e9cd66", textColor: "#111", rotation: "-3deg",  icon: <IconReddit />,     slug: "reddit"    },
-  { name: "LeetCode",   color: "#f6de3e", textColor: "#111", rotation: "2deg",   icon: <IconLeetCode />,   slug: "leetcode"  },
+  { name: "Instagram",  color: "#f7de42", textColor: "#111", iconColor: "#e1306c", rotation: "-4deg",  icon: <IconInstagram />,  slug: "instagram" },
+  { name: "Telegram",   color: "#f29bc9", textColor: "#111", iconColor: "#0088cc", rotation: "3deg",   icon: <IconTelegram />,   slug: "telegram"  },
+  { name: "Amazon",     color: "#79c7ee", textColor: "#111", iconColor: "#d97706", rotation: "-2deg",  icon: <IconAmazon />,     slug: "amazon"    },
+  { name: "LinkedIn",   color: "#a4c9eb", textColor: "#0a2540", iconColor: "#0a66c2", rotation: "2deg",icon: <IconLinkedIn />,   slug: "linkedin"  },
+  { name: "Netflix",    color: "#f5d540", textColor: "#111", iconColor: "#e50914", rotation: "-2deg",  icon: <IconNetflix />,    slug: "netflix"   },
+  { name: "Google Mail",color: "#5bbbe5", textColor: "#111", iconColor: "#ea4335", rotation: "1deg",   icon: <IconGmail />,      slug: "gmail"     },
+  { name: "Spotify",    color: "#69db94", textColor: "#111", iconColor: "#1db954", rotation: "-3deg",  icon: <IconSpotify />,    slug: "spotify"   },
+  { name: "Dropbox",    color: "#88c4ef", textColor: "#111", iconColor: "#0061ff", rotation: "4deg",   icon: <IconDropbox />,    slug: "dropbox"   },
+  { name: "Facebook",   color: "#e9e9ff", textColor: "#1c2c4c", iconColor: "#1877f2", rotation: "-2deg",icon: <IconFacebook />, slug: "facebook"  },
+  { name: "CodeChef",   color: "#f7db40", textColor: "#111", iconColor: "#5b4638", rotation: "2deg",   icon: <IconCodeChef />,   slug: "codechef"  },
+  { name: "Reddit",     color: "#e9cd66", textColor: "#111", iconColor: "#ff4500", rotation: "-3deg",  icon: <IconReddit />,     slug: "reddit"    },
+  { name: "LeetCode",   color: "#f6de3e", textColor: "#111", iconColor: "#d97706", rotation: "2deg",   icon: <IconLeetCode />,   slug: "leetcode"  },
 ];
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -141,10 +149,10 @@ type Props = {
 
 export function LandingHero({ onAuth, onVault }: Props) {
   return (
-    <main className="hero-grid min-h-screen overflow-hidden text-white" style={{ color: "white" }}>
+    <main className="hero-grid min-h-screen overflow-hidden text-slate-800">
 
       {/* ── Top Navigation ────────────────────────────────────── */}
-      <header className="relative z-30 flex items-center justify-between border-b border-white/10 bg-[#071821]/85 px-5 py-4 backdrop-blur-xl md:px-10">
+      <header className="relative z-30 flex items-center justify-between border-b border-amber-900/10 bg-[#fffdfa]/85 px-5 py-4 backdrop-blur-xl md:px-10">
         {/* Logo */}
         <button
           className="flex items-center gap-3 text-left"
@@ -152,30 +160,30 @@ export function LandingHero({ onAuth, onVault }: Props) {
           aria-label="KeyVault-AI home"
         >
           <span className="grid h-10 w-10 place-items-center rounded-xl border border-fuchsia-300/60 bg-gradient-to-br from-indigo-500 via-fuchsia-400 to-emerald-300 shadow-[0_0_24px_#d96cff80]">
-            <ShieldCheck size={22} />
+            <ShieldCheck size={22} className="text-white" />
           </span>
           <span className="text-xl font-black tracking-tight md:text-2xl">
             <span className="gradient-title">KeyVault</span>
-            <span className="text-white">-AI</span>
+            <span className="text-slate-900">-AI</span>
           </span>
         </button>
 
         {/* Desktop nav */}
-        <nav className="hidden items-center gap-5 text-sm font-semibold text-slate-200 md:flex">
+        <nav className="hidden items-center gap-5 text-sm font-semibold text-slate-700 md:flex">
           <button
             onClick={() => onAuth("register")}
-            className="transition hover:text-pink-300"
+            className="transition hover:text-pink-600"
           >
             Create Account
           </button>
           <button
-            className="rounded-xl border border-white/25 px-5 py-2 transition hover:bg-white/10"
+            className="rounded-xl border border-slate-300 bg-white/70 px-5 py-2 text-slate-700 transition hover:bg-white hover:text-slate-900 shadow-sm"
             onClick={() => onAuth("login")}
           >
             Login
           </button>
           <button
-            className="rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 px-5 py-2 font-bold shadow-lg shadow-indigo-500/30 transition hover:from-indigo-400 hover:to-blue-400"
+            className="rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 px-5 py-2 font-bold text-white shadow-lg shadow-indigo-500/25 transition hover:from-indigo-400 hover:to-blue-400"
             onClick={onVault}
           >
             Unlock Vault
@@ -184,7 +192,7 @@ export function LandingHero({ onAuth, onVault }: Props) {
 
         {/* Mobile — just Login */}
         <button
-          className="rounded-lg border border-white/20 px-3 py-2 text-sm md:hidden"
+          className="rounded-lg border border-slate-300 bg-white/70 px-3 py-2 text-sm text-slate-700 md:hidden"
           onClick={() => onAuth("login")}
         >
           Login
@@ -194,14 +202,15 @@ export function LandingHero({ onAuth, onVault }: Props) {
       {/* ── Hero Section ─────────────────────────────────────── */}
       <section className="relative mx-auto grid min-h-[calc(100vh-73px)] max-w-[1600px] place-items-center px-4 py-8 md:px-8">
 
-        {/* Pink + blue radial glow */}
+        {/* Subtle pale yellow, cream and pink ambient light glow */}
         <div
           className="pointer-events-none absolute inset-0 z-[1]"
           style={{
             background: [
-              "radial-gradient(circle at 50% 43%, rgba(235,68,182,.20), transparent 22%)",
-              "radial-gradient(circle at 75% 20%, rgba(65,170,255,.15), transparent 27%)",
-              "radial-gradient(circle at 25% 70%, rgba(99,102,241,.12), transparent 28%)",
+              "radial-gradient(circle at 50% 43%, rgba(244,114,182,.22), transparent 28%)",
+              "radial-gradient(circle at 75% 18%, rgba(254,243,199,.45), transparent 32%)",
+              "radial-gradient(circle at 20% 68%, rgba(251,207,232,.30), transparent 30%)",
+              "radial-gradient(circle at 85% 75%, rgba(254,240,138,.28), transparent 30%)",
             ].join(","),
           }}
         />
@@ -225,7 +234,7 @@ export function LandingHero({ onAuth, onVault }: Props) {
               <div className="flex items-center gap-2">
                 <span
                   className="note-dot"
-                  style={{ color: note.textColor }}
+                  style={{ color: note.iconColor || note.textColor }}
                   aria-hidden="true"
                 >
                   {note.icon}
@@ -250,74 +259,54 @@ export function LandingHero({ onAuth, onVault }: Props) {
           ))}
         </div>
 
-        {/* ── Central pink glassmorphism card ──────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.88 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="relative z-10 mt-4 w-full max-w-[360px] rounded-[26px] border border-pink-200/70 bg-pink-300/70 p-[3px] shadow-[0_0_80px_rgba(236,72,153,.55)] backdrop-blur-xl"
-        >
-          <div className="rounded-[23px] border border-white/40 bg-[#ff88c9]/65 px-6 py-8 text-center text-[#160914] shadow-inner md:px-10">
-            <Sparkles className="mx-auto mb-3 text-[#5b1643]/70" size={26} />
-            <p className="text-xl font-black tracking-tight md:text-2xl">
-              AI PASSWORD VAULT
-            </p>
-            <p className="text-base font-bold opacity-80">(by SK)</p>
-            <div className="mx-auto my-4 h-px w-3/4 bg-[#5b1643]/30" />
-            <p className="text-2xl font-black leading-snug">
-              NEW INSTAGRAM
-              <br />
-              LOGIN
-            </p>
-            <p className="mt-4 text-3xl font-black leading-none">
-              STRONG
-              <br />
-              PASSWORDS
-            </p>
-          </div>
-        </motion.div>
-
-        {/* ── Bottom floating action bar ────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35, duration: 0.55 }}
-          className="relative z-20 mt-[-1.5rem] flex w-full max-w-2xl flex-col items-center gap-3 rounded-[28px] border border-white/15 bg-[#081a22]/85 p-4 shadow-2xl backdrop-blur-2xl sm:flex-row sm:justify-center"
-        >
-          {/* Left copy */}
-          <p className="hidden max-w-[180px] text-xs leading-relaxed text-slate-300 lg:block">
-            To unlock your full vault,
-            <br />
-            use your AI/ML backend.
-          </p>
-
-          <button
-            id="hero-get-started"
-            className="w-full rounded-xl bg-white/10 px-7 py-4 font-black tracking-wide transition hover:bg-white/20 sm:w-auto"
-            onClick={onVault}
+        {/* ── Central Hero Content (Card + Actions) ─────────────── */}
+        <div className="relative z-10 flex flex-col items-center gap-4 sm:gap-5">
+          {/* ── Central pink glassmorphism card ──────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.88 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="w-fit max-w-[320px] rounded-[22px] border border-pink-200/70 bg-pink-300/70 p-[3px] shadow-[0_10px_35px_rgba(236,72,153,.35)] backdrop-blur-xl"
           >
-            GET STARTED <ArrowRight className="ml-2 inline" size={17} />
-          </button>
+            <div className="flex flex-col items-center justify-center rounded-[19px] border border-white/40 bg-[#ff88c9]/65 px-6 py-5 text-center text-[#160914] shadow-inner sm:px-8">
+              <Sparkles className="mb-2 text-[#5b1643]/70" size={22} />
+              <p className="text-base font-black tracking-tight whitespace-nowrap sm:text-lg md:text-xl">
+                AI PASSWORD VAULT
+              </p>
+              <p className="mt-0.5 text-xs font-bold opacity-80 sm:text-sm">
+                (by SK)
+              </p>
+            </div>
+          </motion.div>
 
-          <button
-            id="hero-register-now"
-            className="w-full rounded-xl border border-indigo-300/80 bg-indigo-500/10 px-7 py-4 font-black tracking-wide text-indigo-100 transition hover:bg-indigo-500/30 sm:w-auto"
-            onClick={() => onAuth("register")}
+          {/* ── Bottom floating action bar ────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35, duration: 0.55 }}
+            className="glass-card flex w-full max-w-sm flex-col items-center justify-center gap-3 p-3.5 shadow-xl backdrop-blur-2xl sm:w-auto sm:max-w-none sm:flex-row sm:gap-4 sm:p-3.5"
           >
-            REGISTER NOW
-          </button>
+            <button
+              id="hero-get-started"
+              className="w-full rounded-xl bg-slate-900 px-7 py-4 font-black tracking-wide text-white transition hover:bg-slate-800 sm:w-auto shadow-md"
+              onClick={onVault}
+            >
+              GET STARTED <ArrowRight className="ml-2 inline" size={17} />
+            </button>
 
-          {/* Right copy */}
-          <p className="hidden max-w-[180px] text-xs leading-relaxed text-slate-300 lg:block">
-            To unlock your vault with
-            <br />
-            AI/ML backend features
-          </p>
-        </motion.div>
+            <button
+              id="hero-register-now"
+              className="w-full rounded-xl border border-indigo-200 bg-indigo-50 px-7 py-4 font-black tracking-wide text-indigo-700 transition hover:bg-indigo-100 sm:w-auto"
+              onClick={() => onAuth("register")}
+            >
+              REGISTER NOW
+            </button>
+          </motion.div>
+        </div>
 
         {/* Decorative lock icon */}
         <LockKeyhole
-          className="absolute bottom-10 right-8 text-white/35 z-[2]"
+          className="absolute bottom-10 right-8 text-slate-400/40 z-[2]"
           size={26}
         />
       </section>

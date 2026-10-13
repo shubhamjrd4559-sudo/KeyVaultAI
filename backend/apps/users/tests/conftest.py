@@ -16,8 +16,20 @@ from rest_framework.test import APIClient
 
 from apps.audit.services.audit import AuditService
 from apps.users.services.authentication import TokenService
-from apps.users.services.rate_limiting import NullRateLimiter
 from apps.users.services.users import UserService
+
+
+class TestAllowRateLimiter:
+    """Test-only limiter; production fallback is deliberately fail-closed."""
+
+    def check_and_record(self, action, key):
+        return True
+
+    def is_allowed(self, action, key):
+        return True
+
+    def record(self, action, key):
+        return None
 
 
 @pytest.fixture
@@ -34,8 +46,8 @@ def token_service():
 
 @pytest.fixture
 def null_rate_limiter():
-    """NullRateLimiter — allows all requests without Redis."""
-    return NullRateLimiter()
+    """Test-only allow-all limiter; no external Redis connection is used."""
+    return TestAllowRateLimiter()
 
 
 @pytest.fixture
@@ -70,7 +82,7 @@ def sample_user_doc():
         "email": "test@example.com",
         "full_name": "Test User",
         "password_hash": ph.hash("ValidPass1!"),
-        "email_verified": False,
+        "email_verified": True,
         "account_status": "active",
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
@@ -92,4 +104,5 @@ def user_service(mock_user_repo, token_service, null_rate_limiter, mock_audit):
         token_service=token_service,
         rate_limiter=null_rate_limiter,
         audit_service=mock_audit,
+        email_sender=MagicMock(),
     )

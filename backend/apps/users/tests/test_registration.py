@@ -26,6 +26,8 @@ def test_successful_registration_returns_safe_user_dict(user_service, mock_user_
 
     assert result["email"] == "alice@example.com"
     assert result["full_name"] == "Alice Smith"
+    assert result["account_status"] == "pending_verification"
+    assert result["email_verified"] is False
     assert "user_id" in result
     assert "password_hash" not in result
 
@@ -43,6 +45,7 @@ def test_successful_registration_creates_user_in_repo(user_service, mock_user_re
     mock_user_repo.create_user.assert_called_once()
     call_arg = mock_user_repo.create_user.call_args[0][0]
     assert call_arg["email"] == "bob@example.com"  # normalized
+    assert call_arg["account_status"] == "pending_verification"
 
 
 # ── 2. Duplicate email ────────────────────────────────────────────────────────

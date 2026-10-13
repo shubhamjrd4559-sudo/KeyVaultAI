@@ -1,0 +1,54 @@
+# railway.toml — Multi-service deployment for KeyVaultAI
+#
+# Services defined here:
+#   api          — Django API (gunicorn)
+#   celery-worker— Celery task worker (persistent daemon)
+#   celery-beat  — Celery beat scheduler (persistent daemon)
+#
+# Deploy via Railway dashboard or CLI:
+#   railway up
+#
+# NOTE: All three services share the same Docker image (built from
+# backend/Dockerfile). Environment variables are set per-service in the
+# Railway dashboard. See docs/ENVIRONMENT_VARIABLES.md for the full list.
+#
+# IMPORTANT: Railway does not natively support multiple services in one
+# railway.toml. This file documents the intended architecture. You must
+# create each service manually in the Railway dashboard and point them all
+# to the backend/Dockerfile with the respective start commands below.
+#
+# ┌────────────────────────────────────────────────────────────────────┐
+# │ Service: api (Django + Gunicorn)                                   │
+# │ Root dir: backend/                                                 │
+# │ Start cmd: sh deploy.sh                                            │
+# │ Health: GET /api/v1/health/ → 200                                  │
+# └────────────────────────────────────────────────────────────────────┘
+#
+# ┌────────────────────────────────────────────────────────────────────┐
+# │ Service: celery-worker                                             │
+# │ Root dir: backend/                                                 │
+# │ Start cmd: celery -A config worker --loglevel=INFO                 │
+# │ Health: none (Railway monitors process exit code)                  │
+# └────────────────────────────────────────────────────────────────────┘
+#
+# ┌────────────────────────────────────────────────────────────────────┐
+# │ Service: celery-beat                                               │
+# │ Root dir: backend/                                                 │
+# │ Start cmd: celery -A config beat --loglevel=INFO                   │
+# │ Health: none (Railway monitors process exit code)                  │
+# └────────────────────────────────────────────────────────────────────┘
+#
+# ┌────────────────────────────────────────────────────────────────────┐
+# │ External Service: Redis (Upstash)                                  │
+# │ Use Upstash Redis TLS URL: rediss://...                            │
+# │ Set REDIS_URL env var in Railway dashboard for all three services. │
+# └────────────────────────────────────────────────────────────────────┘
+
+[build]
+  builder = "DOCKERFILE"
+  dockerfilePath = "backend/Dockerfile"
+
+[deploy]
+  startCommand = "sh deploy.sh"
+  healthcheckPath = "/api/v1/health/"
+  healthcheckTimeout = 30

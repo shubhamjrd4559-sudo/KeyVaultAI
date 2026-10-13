@@ -40,9 +40,11 @@ class UserRepository:
         self._db = db
         self._users = db["users"]
         self._tokens = db["refresh_tokens"]
+        self._verification_tokens = db["email_verification_tokens"]
+        self._reset_tokens = db["password_reset_tokens"]
 
     def ensure_indexes(self) -> None:
-        """Create required collection indexes. Idempotent — safe to call at startup."""
+        """Create required indexes; invoke only through the approved management command."""
         self._users.create_index(
             [("email", ASCENDING)], unique=True, name="idx_email_unique"
         )
@@ -61,6 +63,21 @@ class UserRepository:
             expireAfterSeconds=0,
             name="idx_token_ttl",
         )
+        for collection, prefix in (
+            (self._verification_tokens, "email_verification"),
+            (self._reset_tokens, "password_reset"),
+        ):
+            collection.create_index(
+                [("token_hash", ASCENDING)], unique=True,
+                name=f"idx_{prefix}_token_unique",
+            )
+            collection.create_index(
+                [("expires_at", ASCENDING)], expireAfterSeconds=0,
+                name=f"idx_{prefix}_ttl",
+            )
+            collection.create_index(
+                [("user_id", ASCENDING)], name=f"idx_{prefix}_user_id",
+            )
 
     # ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -128,6 +145,58 @@ class UserRepository:
         self._tokens.update_many(
             {"user_id": user_id}, {"$set": {"revoked": True}}
         )
+
+    def store_email_verification_token(self, token_hash: str, user_id: str, expires_at: datetime) -> None:
+        self._verification_tokens.delete_many({"user_id": user_id})
+        self._verification_tokens.insert_one({
+            "token_hash": token_hash,
+            "user_id": user_id,
+            "expires_at": expires_at,
+            "created_at": datetime.now(timezone.utc),
+        })
+
+    def consume_email_verification_token(self, token_hash: str, now: datetime) -> Optional[dict]:
+        return self._verification_tokens.find_one_and_delete({
+            "token_hash": token_hash,
+            "expires_at": {"$gt": now},
+        })
+
+    def mark_email_verified(self, user_id: str) -> bool:
+        result = self._users.update_one(
+            {"user_id": user_id, "email_verified": {"$ne": True}},
+            {"$set": {
+                "email_verified": True,
+                "account_status": "active",
+                "updated_at": datetime.now(timezone.utc),
+            }},
+        )
+        return result.modified_count == 1
+
+    def store_password_reset_token(self, token_hash: str, user_id: str, expires_at: datetime) -> None:
+        self._reset_tokens.delete_many({"user_id": user_id})
+        self._reset_tokens.insert_one({
+            "token_hash": token_hash,
+            "user_id": user_id,
+            "expires_at": expires_at,
+            "created_at": datetime.now(timezone.utc),
+        })
+
+    def consume_password_reset_token(self, token_hash: str, now: datetime) -> Optional[dict]:
+        return self._reset_tokens.find_one_and_delete({
+            "token_hash": token_hash,
+            "expires_at": {"$gt": now},
+        })
+
+    def update_password_hash(self, user_id: str, password_hash: str) -> bool:
+        result = self._users.update_one(
+            {"user_id": user_id},
+            {"$set": {
+                "password_hash": password_hash,
+                "updated_at": datetime.now(timezone.utc),
+            }},
+        )
+        self._reset_tokens.delete_many({"user_id": user_id})
+        return result.modified_count == 1
 
     def is_refresh_token_valid(self, jti: str) -> bool:
         """Return True if the token exists, is not revoked, and has not expired."""

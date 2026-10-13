@@ -1,4 +1,4 @@
-# API — Milestones 1 & 2
+# API — Current repository implementation
 
 ## `GET /api/v1/health/`
 
@@ -41,7 +41,7 @@ Register a new user account.
     "email": "alice@example.com",
     "full_name": "Alice Smith",
     "email_verified": false,
-    "account_status": "active",
+    "account_status": "pending_verification",
     "created_at": "2026-08-14T00:00:00+00:00"
   }
 }
@@ -131,17 +131,23 @@ Rotate refresh token and issue new access + refresh pair.
 
 ---
 
-### `POST /api/v1/auth/verify-email/`  ⚠️ SCAFFOLDED
+New accounts remain pending until verification succeeds. Verification email is sent through the configured Django SMTP backend.
 
-Returns `503` — email infrastructure not yet implemented.
+### `POST /api/v1/auth/verify-email/`
 
-### `POST /api/v1/auth/forgot-password/`  ⚠️ SCAFFOLDED
+Request: `{"token":"<single-use token>"}`. Invalid or expired token: `400`; rate-limit service unavailable: `503`.
 
-Returns `503` — email infrastructure not yet implemented.
+### `POST /api/v1/auth/resend-verification/`
 
-### `POST /api/v1/auth/reset-password/`  ⚠️ SCAFFOLDED
+Request: `{"email":"alice@example.com"}`. The response does not reveal whether the account needs verification.
 
-Returns `503` — email infrastructure not yet implemented.
+### `POST /api/v1/auth/forgot-password/`
+
+Request: `{"email":"alice@example.com"}`. The response is identical for known and unknown email addresses.
+
+### `POST /api/v1/auth/reset-password/`
+
+Request: `{"token":"<single-use token>","password":"SecurePass2!"}`. Success invalidates existing refresh sessions. Tokens are stored as hashes and expire according to backend settings.
 
 ---
 

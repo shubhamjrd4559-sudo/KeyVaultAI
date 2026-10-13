@@ -284,6 +284,94 @@ class CredentialService:
             metadata={"credential_id": credential_id},
         )
 
+    def soft_delete_credential(
+        self,
+        credential_id: str,
+        user_id: str,
+        ip_address: Optional[str] = None,
+    ) -> None:
+        """Move a credential to Recently Deleted (soft delete).
+
+        The credential is NOT permanently removed — it remains recoverable
+        for 72 hours. The encrypted password is retained.
+        CredentialNotFoundError is raised (→ 404) if not found or not owned.
+        """
+        repo = self._require_repo()
+        repo.soft_delete_by_id_and_user(
+            credential_id=credential_id, user_id=user_id
+        )
+        self._audit.log(
+            AuditEvent.CREDENTIAL_SOFT_DELETED,
+            user_id=user_id,
+            ip_address=ip_address,
+            metadata={"credential_id": credential_id},
+        )
+
+    def list_deleted_credentials(self, user_id: str) -> list[dict]:
+        """Return recently-deleted credentials for the user.
+
+        Excludes encrypted_password. Includes deleted_at timestamp.
+        Only credentials deleted in the last 72 hours are returned.
+        """
+        repo = self._require_repo()
+        docs = repo.find_deleted_by_user(user_id=user_id)
+        result = []
+        for doc in docs:
+            cred = Credential.from_mongo_doc({**doc, "encrypted_password": ""})
+            d = cred.list_dict()
+            raw_deleted_at = doc.get("deleted_at")
+            d["deleted_at"] = raw_deleted_at.isoformat() if raw_deleted_at else None
+            result.append(d)
+        return result
+
+    def restore_credential(
+        self,
+        credential_id: str,
+        user_id: str,
+        ip_address: Optional[str] = None,
+    ) -> dict:
+        """Restore a soft-deleted credential to the active vault.
+
+        Removes the deleted state; the credential immediately appears in
+        the normal vault listing. The encrypted password is preserved.
+        Raises CredentialNotFoundError if not found or not in deleted state.
+        """
+        repo = self._require_repo()
+        doc = repo.restore_by_id_and_user(
+            credential_id=credential_id, user_id=user_id
+        )
+        cred = Credential.from_mongo_doc({**doc, "encrypted_password": ""})
+        self._audit.log(
+            AuditEvent.CREDENTIAL_RESTORED,
+            user_id=user_id,
+            ip_address=ip_address,
+            metadata={"credential_id": credential_id},
+        )
+        return cred.safe_dict()
+
+    def permanently_delete_credential(
+        self,
+        credential_id: str,
+        user_id: str,
+        ip_address: Optional[str] = None,
+    ) -> None:
+        """Immediately and permanently delete a soft-deleted credential.
+
+        This action is irreversible. Only operates on credentials in the
+        deleted state (is_deleted=True) — active credentials are protected.
+        Raises CredentialNotFoundError if not found or not in deleted state.
+        """
+        repo = self._require_repo()
+        repo.permanent_delete_by_id_and_user(
+            credential_id=credential_id, user_id=user_id
+        )
+        self._audit.log(
+            AuditEvent.CREDENTIAL_PERMANENTLY_DELETED,
+            user_id=user_id,
+            ip_address=ip_address,
+            metadata={"credential_id": credential_id},
+        )
+
     # ── Reveal ────────────────────────────────────────────────────────────────
 
     def reveal_password(

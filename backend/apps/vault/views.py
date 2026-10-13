@@ -314,3 +314,139 @@ class CredentialCopyView(APIView):
                 {"detail": "Vault service temporarily unavailable."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
+
+
+class CredentialSoftDeleteView(APIView):
+    """
+    POST /api/v1/vault/credentials/{credential_id}/soft-delete/
+
+    Soft-deletes (moves to Recently Deleted) a credential owned by the authenticated user.
+    The credential remains recoverable for 72 hours before automatic permanent deletion.
+    Does NOT decrypt or return the password.
+    """
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, credential_id: str):
+        try:
+            svc = _get_credential_service()
+            svc.soft_delete_credential(
+                credential_id=credential_id,
+                user_id=request.user.user_id,
+                ip_address=_client_ip(request),
+            )
+            return Response(
+                {"detail": "Credential moved to Recently Deleted."},
+                status=status.HTTP_200_OK,
+            )
+        except CredentialNotFoundError as exc:
+            return _handle_not_found(exc)
+        except CredentialServiceError as exc:
+            return _handle_service_error(exc)
+        except Exception:
+            logger.exception("Unexpected error during soft delete.")
+            return Response(
+                {"detail": "Vault service temporarily unavailable."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+
+class RecentlyDeletedListView(APIView):
+    """
+    GET /api/v1/vault/recently-deleted/
+
+    Returns the authenticated user's soft-deleted credentials.
+    Does NOT return plaintext passwords or encrypted_password ciphertext.
+    Only credentials deleted within the past 72 hours are included.
+    """
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            svc = _get_credential_service()
+            credentials = svc.list_deleted_credentials(
+                user_id=request.user.user_id
+            )
+            return Response({"credentials": credentials, "count": len(credentials)})
+        except CredentialServiceError as exc:
+            return _handle_service_error(exc)
+        except Exception:
+            logger.exception("Unexpected error listing recently deleted credentials.")
+            return Response(
+                {"detail": "Vault service temporarily unavailable."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+
+class CredentialRestoreView(APIView):
+    """
+    POST /api/v1/vault/credentials/{credential_id}/restore/
+
+    Restores a soft-deleted credential to the active vault.
+    The encrypted password is preserved — no decryption occurs.
+    Ownership verified by repository scoping (user_id from JWT).
+    """
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, credential_id: str):
+        try:
+            svc = _get_credential_service()
+            credential = svc.restore_credential(
+                credential_id=credential_id,
+                user_id=request.user.user_id,
+                ip_address=_client_ip(request),
+            )
+            return Response({"credential": credential}, status=status.HTTP_200_OK)
+        except CredentialNotFoundError as exc:
+            return _handle_not_found(exc)
+        except CredentialServiceError as exc:
+            return _handle_service_error(exc)
+        except Exception:
+            logger.exception("Unexpected error during credential restore.")
+            return Response(
+                {"detail": "Vault service temporarily unavailable."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+
+class CredentialPermanentDeleteView(APIView):
+    """
+    DELETE /api/v1/vault/credentials/{credential_id}/permanent-delete/
+
+    Immediately and permanently deletes a soft-deleted credential.
+    This action is IRREVERSIBLE.
+    Only operates on credentials in the deleted state (is_deleted=True).
+    Active credentials are protected — this endpoint returns 404 for them.
+    Ownership verified by repository scoping (user_id from JWT).
+    """
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, credential_id: str):
+        try:
+            svc = _get_credential_service()
+            svc.permanently_delete_credential(
+                credential_id=credential_id,
+                user_id=request.user.user_id,
+                ip_address=_client_ip(request),
+            )
+            return Response(
+                {"detail": "Credential permanently deleted."},
+                status=status.HTTP_200_OK,
+            )
+        except CredentialNotFoundError as exc:
+            return _handle_not_found(exc)
+        except CredentialServiceError as exc:
+            return _handle_service_error(exc)
+        except Exception:
+            logger.exception("Unexpected error during permanent delete.")
+            return Response(
+                {"detail": "Vault service temporarily unavailable."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )

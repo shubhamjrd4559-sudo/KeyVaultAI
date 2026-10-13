@@ -87,14 +87,15 @@ class MLPredictView(APIView):
             return Response(_ML_SERVICE_UNAVAILABLE, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
         try:
-            # Owner-scoped fetch — uses M3 ownership check
-            doc = repo.find_by_id(credential_id=credential_id, user_id=user_id)
+            # Owner-scoped fetch — find_by_id_and_user raises CredentialNotFoundError
+            # if the credential does not exist OR belongs to a different user (IDOR prevention).
+            from apps.vault.repositories.credentials import CredentialNotFoundError as _CredNotFound
+            doc = repo.find_by_id_and_user(credential_id=credential_id, user_id=user_id)
+        except _CredNotFound:
+            return Response({"detail": "Credential not found."}, status=status.HTTP_404_NOT_FOUND)
         except CredentialRepositoryError:
             logger.exception("Repository error fetching credential for ML predict.")
             return Response(_ML_SERVICE_UNAVAILABLE, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-
-        if doc is None:
-            return Response({"detail": "Credential not found."}, status=status.HTTP_404_NOT_FOUND)
 
         # Reuse detection for this credential (in-memory, hashes discarded)
         try:
@@ -112,7 +113,13 @@ class MLPredictView(APIView):
         # Decrypt password temporarily for accurate feature extraction
         try:
             enc = get_encryption_service()
-            plaintext = enc.decrypt(doc["encrypted_password"])
+            # get_encrypted_password_for_owner is the only owner-scoped method that
+            # returns the encrypted ciphertext — never exposed to API responses.
+            encrypted_pw = repo.get_encrypted_password_for_owner(
+                credential_id=credential_id, user_id=user_id
+            )
+            plaintext = enc.decrypt(encrypted_pw)
+            encrypted_pw = None  # noqa: F841
             features = extract_features(
                 plaintext_password=plaintext,
                 security_score=doc.get("security_score", 0),

@@ -18,20 +18,25 @@ NEVER:
 """
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 
 from apps.audit.services.audit import AuditEvent, AuditService
+from django.conf import settings
 from ..models import User
 from ..repositories.users import UserAlreadyExistsError, UserRepository
 from .authentication import TokenService
+from .email_delivery import send_password_reset_email, send_verification_email
+from .email_tokens import create_email_token, hash_email_token
 from .rate_limiting import (
     RATE_LIMIT_LOGIN,
+    RATE_LIMIT_PASSWORD_RESET,
     RATE_LIMIT_REFRESH,
     RATE_LIMIT_REGISTER,
+    RATE_LIMIT_VERIFY_EMAIL,
     RateLimiter,
 )
 
@@ -83,6 +88,14 @@ class TooManyAttemptsError(Exception):
     """Raised when rate limit is exceeded."""
 
 
+class EmailNotVerifiedError(AuthenticationError):
+    """Raised after correct credentials are supplied for an unverified account."""
+
+
+class InvalidEmailTokenError(Exception):
+    """Raised for missing, expired, already-used, or unknown email action tokens."""
+
+
 # ── Service ───────────────────────────────────────────────────────────────────
 
 class UserService:
@@ -97,11 +110,14 @@ class UserService:
         token_service: TokenService,
         rate_limiter: RateLimiter,
         audit_service: AuditService,
+        email_sender=None,
     ) -> None:
         self._repo = user_repo
         self._tokens = token_service
         self._limiter = rate_limiter
         self._audit = audit_service
+        self._send_verification_email = email_sender or send_verification_email
+        self._send_password_reset_email = email_sender or send_password_reset_email
 
     # ── Registration ──────────────────────────────────────────────────────────
 
@@ -144,8 +160,10 @@ class UserService:
             email=norm_email,
             full_name=full_name.strip(),
             password_hash=password_hash,
+            account_status="pending_verification",
         )
         self._repo.create_user(user.to_mongo_doc())
+        self._issue_verification_token(user.user_id, user.email, user.full_name)
 
         self._audit.log(
             AuditEvent.REGISTER,
@@ -155,6 +173,78 @@ class UserService:
         )
 
         return user.safe_dict()
+
+    def _issue_verification_token(self, user_id: str, email: str, full_name: str) -> None:
+        raw_token, token_hash = create_email_token()
+        expires_at = datetime.now(timezone.utc) + timedelta(
+            seconds=settings.EMAIL_VERIFICATION_TOKEN_TTL_SECONDS
+        )
+        self._repo.store_email_verification_token(token_hash, user_id, expires_at)
+        self._send_verification_email(email, full_name, raw_token)
+
+    def _issue_password_reset_token(self, user_id: str, email: str, full_name: str) -> None:
+        raw_token, token_hash = create_email_token()
+        expires_at = datetime.now(timezone.utc) + timedelta(
+            seconds=settings.PASSWORD_RESET_TOKEN_TTL_SECONDS
+        )
+        self._repo.store_password_reset_token(token_hash, user_id, expires_at)
+        self._send_password_reset_email(email, full_name, raw_token)
+
+    def resend_verification(self, email: str, ip_address: Optional[str] = None) -> None:
+        """Send another verification link without disclosing account existence."""
+        if not self._limiter.check_and_record(RATE_LIMIT_VERIFY_EMAIL, ip_address or "unknown"):
+            raise TooManyAttemptsError("Too many verification requests. Please try again later.")
+        if self._repo is None:
+            return
+        user = self._repo.find_by_email(_normalize_email(email))
+        if user and not user.get("email_verified") and user.get("account_status") != "disabled":
+            self._issue_verification_token(user["user_id"], user["email"], user.get("full_name", ""))
+
+    def verify_email(self, raw_token: str, ip_address: Optional[str] = None) -> None:
+        if not self._limiter.check_and_record(RATE_LIMIT_VERIFY_EMAIL, ip_address or "unknown"):
+            raise TooManyAttemptsError("Too many verification requests. Please try again later.")
+        if self._repo is None:
+            raise InvalidEmailTokenError("Invalid or expired verification link.")
+        token = self._repo.consume_email_verification_token(
+            hash_email_token(raw_token), datetime.now(timezone.utc)
+        )
+        if not token or not self._repo.mark_email_verified(token["user_id"]):
+            raise InvalidEmailTokenError("Invalid or expired verification link.")
+        self._audit.log(AuditEvent.EMAIL_VERIFIED, user_id=token["user_id"], ip_address=ip_address)
+
+    def request_password_reset(self, email: str, ip_address: Optional[str] = None) -> None:
+        """Always return the same result whether or not the account exists."""
+        if not self._limiter.check_and_record(RATE_LIMIT_PASSWORD_RESET, ip_address or "unknown"):
+            raise TooManyAttemptsError("Too many password reset requests. Please try again later.")
+        if self._repo is None:
+            return
+        normalized = _normalize_email(email)
+        user = self._repo.find_by_email(normalized)
+        if user:
+            self._issue_password_reset_token(user["user_id"], user["email"], user.get("full_name", ""))
+            self._audit.log(
+                AuditEvent.PASSWORD_RESET_REQUEST,
+                user_id=user["user_id"],
+                email_prefix=normalized[:3],
+                ip_address=ip_address,
+            )
+
+    def reset_password(self, raw_token: str, password: str, ip_address: Optional[str] = None) -> None:
+        if not self._limiter.check_and_record(RATE_LIMIT_PASSWORD_RESET, ip_address or "unknown"):
+            raise TooManyAttemptsError("Too many password reset attempts. Please try again later.")
+        _validate_password(password)
+        if self._repo is None:
+            raise InvalidEmailTokenError("Invalid or expired password reset link.")
+        token = self._repo.consume_password_reset_token(
+            hash_email_token(raw_token), datetime.now(timezone.utc)
+        )
+        if not token:
+            raise InvalidEmailTokenError("Invalid or expired password reset link.")
+        user_id = token["user_id"]
+        if not self._repo.update_password_hash(user_id, _HASHER.hash(password)):
+            raise InvalidEmailTokenError("Invalid or expired password reset link.")
+        self._repo.revoke_all_user_tokens(user_id)
+        self._audit.log(AuditEvent.PASSWORD_RESET_COMPLETED, user_id=user_id, ip_address=ip_address)
 
     # ── Login ─────────────────────────────────────────────────────────────────
 
@@ -206,6 +296,9 @@ class UserService:
                 ip_address=ip_address,
             )
             raise AccountDisabledError("This account has been disabled.")
+
+        if not user_doc.get("email_verified", False):
+            raise EmailNotVerifiedError("Please verify your email before signing in.")
 
         user_id = user_doc["user_id"]
 
@@ -291,7 +384,7 @@ class UserService:
             )
 
         user_doc = self._repo.find_by_user_id(user_id)
-        if not user_doc or user_doc.get("account_status") == "disabled":
+        if not user_doc or user_doc.get("account_status") == "disabled" or not user_doc.get("email_verified", False):
             raise AuthenticationError("Invalid refresh token.")
 
         # Rotation: revoke old token, issue new pair

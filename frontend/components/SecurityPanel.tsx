@@ -69,7 +69,7 @@ function ScoreArc({ score }: { score: number }) {
 
   return (
     <svg width="130" height="130" viewBox="0 0 130 130" aria-hidden="true">
-      <circle cx="65" cy="65" r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="10" />
+      <circle cx="65" cy="65" r={r} fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="10" />
       <circle
         cx="65" cy="65" r={r}
         fill="none"
@@ -80,8 +80,8 @@ function ScoreArc({ score }: { score: number }) {
         strokeDashoffset={circumference * 0.25}
         style={{ transition: "stroke-dasharray 0.8s ease" }}
       />
-      <text x="65" y="60" textAnchor="middle" fill="white" fontSize="26" fontWeight="800">{score}</text>
-      <text x="65" y="78" textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="10">/100</text>
+      <text x="65" y="60" textAnchor="middle" fill="#0f172a" fontSize="26" fontWeight="800">{score}</text>
+      <text x="65" y="78" textAnchor="middle" fill="#64748b" fontSize="10">/100</text>
     </svg>
   );
 }
@@ -141,10 +141,10 @@ export function SecurityPanel() {
     return (
       <div className="security-panel glass-card p-6 animate-pulse">
         <div className="flex items-center gap-3 mb-4">
-          <ShieldCheck className="text-indigo-300" size={22} />
-          <h2 className="text-base font-bold text-slate-200">Security Analysis</h2>
+          <ShieldCheck className="text-indigo-600" size={22} />
+          <h2 className="text-base font-bold text-slate-900">Security Analysis</h2>
         </div>
-        <div className="grid place-items-center py-8 text-slate-400">
+        <div className="grid place-items-center py-8 text-slate-500">
           <LoaderCircle className="animate-spin mb-2" size={28} />
           <span className="text-sm">Analysing your vault…</span>
         </div>
@@ -155,14 +155,14 @@ export function SecurityPanel() {
   if (error) {
     return (
       <div className="glass-card p-6">
-        <div className="flex items-center gap-3 mb-3 text-rose-300">
+        <div className="flex items-center gap-3 mb-3 text-rose-600">
           <ShieldX size={22} />
-          <h2 className="text-base font-bold">Security Analysis</h2>
+          <h2 className="text-base font-bold text-slate-900">Security Analysis</h2>
         </div>
-        <p className="text-sm text-slate-400">{error}</p>
+        <p className="text-sm text-slate-600">{error}</p>
         <button
           onClick={() => void loadSecurity()}
-          className="mt-3 flex items-center gap-2 text-xs text-indigo-300 hover:text-white transition-colors"
+          className="mt-3 flex items-center gap-2 text-xs text-indigo-600 hover:text-indigo-800 transition-colors"
         >
           <RefreshCw size={14} /> Retry
         </button>
@@ -182,14 +182,14 @@ export function SecurityPanel() {
         <div className="flex items-center gap-3">
           <ShieldCheck size={22} style={{ color: levelColor }} />
           <div>
-            <h2 className="text-base font-bold text-slate-100">Security Analysis</h2>
-            <p className="text-xs text-slate-400">Deterministic · Rule-based · Local</p>
+            <h2 className="text-base font-bold text-slate-900">Security Analysis</h2>
+            <p className="text-xs text-slate-500">Deterministic · Rule-based · Local</p>
           </div>
         </div>
         <button
           onClick={() => void loadSecurity()}
           title="Refresh analysis"
-          className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+          className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
           aria-label="Refresh security analysis"
         >
           <RefreshCw size={15} />
@@ -205,7 +205,7 @@ export function SecurityPanel() {
         >
           {LEVEL_LABELS[summary.overall_level]}
         </span>
-        <p className="text-xs text-slate-400 mt-1">{summary.total} credential{summary.total !== 1 ? "s" : ""} analysed</p>
+        <p className="text-xs text-slate-500 mt-1">{summary.total} credential{summary.total !== 1 ? "s" : ""} analysed</p>
       </div>
 
       {/* Counts row */}
@@ -216,9 +216,9 @@ export function SecurityPanel() {
           { label: "Fair",        count: summary.fair_count,        color: LEVEL_COLORS.fair },
           { label: "Weak",        count: summary.weak_count,        color: LEVEL_COLORS.weak },
         ].map(({ label, count, color }) => (
-          <div key={label} className="rounded-xl bg-white/5 p-3">
+          <div key={label} className="rounded-xl border border-amber-200/50 bg-amber-50/40 p-3">
             <p className="text-xl font-black" style={{ color }}>{count}</p>
-            <p className="text-xs text-slate-400">{label}</p>
+            <p className="text-xs text-slate-600 font-medium">{label}</p>
           </div>
         ))}
       </div>
@@ -228,14 +228,14 @@ export function SecurityPanel() {
         <div
           className="rounded-xl px-4 py-3 text-sm"
           style={{
-            background: mlPrediction ? `${ML_RISK_COLORS[mlPrediction.risk_level]}11` : "rgba(255,255,255,0.04)",
-            border: `1px solid ${mlPrediction ? ML_RISK_COLORS[mlPrediction.risk_level] + "33" : "rgba(255,255,255,0.08)"}`,
+            background: mlPrediction ? `${ML_RISK_COLORS[mlPrediction.risk_level]}12` : "rgba(0,0,0,0.03)",
+            border: `1px solid ${mlPrediction ? ML_RISK_COLORS[mlPrediction.risk_level] + "40" : "rgba(0,0,0,0.08)"}`,
           }}
           aria-label="ML Risk Prediction"
         >
           <div className="flex items-center gap-2 mb-2">
-            <BrainCircuit size={15} className="text-indigo-300 shrink-0" />
-            <span className="font-semibold text-slate-200 text-xs uppercase tracking-wide">ML Risk Prediction</span>
+            <BrainCircuit size={15} className="text-indigo-600 shrink-0" />
+            <span className="font-semibold text-slate-800 text-xs uppercase tracking-wide">ML Risk Prediction</span>
             {mlLoading && <LoaderCircle size={12} className="animate-spin text-slate-400 ml-auto" />}
           </div>
           {mlPrediction && (
@@ -247,11 +247,11 @@ export function SecurityPanel() {
                 >
                   {ML_RISK_LABELS[mlPrediction.risk_level]}
                 </span>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-500">
                   {(mlPrediction.confidence * 100).toFixed(0)}% confidence
                 </span>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed">{mlPrediction.explanation}</p>
+              <p className="text-xs text-slate-600 leading-relaxed">{mlPrediction.explanation}</p>
             </div>
           )}
         </div>
@@ -259,20 +259,20 @@ export function SecurityPanel() {
 
       {/* Stats row */}
       <div className="space-y-2 text-sm">
-        <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
-          <span className="text-slate-400">Avg score</span>
-          <span className="font-bold text-slate-100">{summary.average_score.toFixed(1)}</span>
+        <div className="flex items-center justify-between rounded-lg border border-amber-200/40 bg-amber-50/40 px-3 py-2">
+          <span className="text-slate-600">Avg score</span>
+          <span className="font-bold text-slate-900">{summary.average_score.toFixed(1)}</span>
         </div>
-        <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
-          <span className="text-slate-400 flex items-center gap-2">
+        <div className="flex items-center justify-between rounded-lg border border-amber-200/40 bg-amber-50/40 px-3 py-2">
+          <span className="text-slate-600 flex items-center gap-2">
             {summary.reused_count > 0
-              ? <AlertTriangle size={14} className="text-amber-400" />
-              : <CheckCircle2 size={14} className="text-green-400" />}
+              ? <AlertTriangle size={14} className="text-amber-500" />
+              : <CheckCircle2 size={14} className="text-emerald-500" />}
             Reused passwords
           </span>
           <span
             className="font-bold"
-            style={{ color: summary.reused_count > 0 ? "#fb923c" : "#4ade80" }}
+            style={{ color: summary.reused_count > 0 ? "#ea580c" : "#16a34a" }}
           >
             {summary.reused_count}
           </span>
@@ -284,7 +284,7 @@ export function SecurityPanel() {
         <div>
           <button
             onClick={() => setShowAlerts(prev => !prev)}
-            className="flex w-full items-center justify-between rounded-xl border border-amber-400/20 bg-amber-400/8 px-3 py-2 text-sm text-amber-300 hover:bg-amber-400/15 transition-colors"
+            className="flex w-full items-center justify-between rounded-xl border border-amber-300 bg-amber-50/90 px-3 py-2 text-sm text-amber-900 hover:bg-amber-100 transition-colors"
             aria-expanded={showAlerts}
           >
             <span className="flex items-center gap-2">
@@ -299,20 +299,20 @@ export function SecurityPanel() {
               {alertCredentials.map(cred => (
                 <li
                   key={cred.credential_id}
-                  className="rounded-lg bg-white/5 p-3 text-xs"
+                  className="rounded-lg border border-amber-200/50 bg-amber-50/50 p-3 text-xs"
                 >
-                  <p className="font-bold text-slate-100 truncate">{cred.website_name}</p>
+                  <p className="font-bold text-slate-900 truncate">{cred.website_name}</p>
                   <div className="mt-1 flex flex-wrap gap-1">
                     {cred.alerts.map(alert => (
                       <span
                         key={alert}
-                        className="rounded-full bg-rose-400/15 px-2 py-0.5 text-rose-300"
+                        className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-rose-700 font-medium"
                       >
                         {ALERT_LABELS[alert] ?? alert}
                       </span>
                     ))}
                     {cred.is_reused && (
-                      <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-amber-300">
+                      <span className="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-amber-800 font-medium">
                         Reused
                       </span>
                     )}
@@ -325,7 +325,7 @@ export function SecurityPanel() {
       )}
 
       {alertCredentials.length === 0 && summary.total > 0 && (
-        <div className="flex items-center gap-2 rounded-xl bg-green-400/10 px-3 py-2 text-sm text-green-300">
+        <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
           <CheckCircle2 size={16} />
           All credentials look healthy!
         </div>

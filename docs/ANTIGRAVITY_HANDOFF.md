@@ -208,3 +208,7 @@ Do not expose secrets.
 Do not skip tests.
 
 Continue from the current verified project state.
+# Historical Antigravity Handoff
+
+This document records an earlier audit snapshot and is not authoritative for the current implementation. Authentication email flows, fail-closed Redis behavior, 72-hour recovery, production configuration, and explicit MongoDB index preflight have since changed. Review the current source and `docs/ENVIRONMENT_VARIABLES.md` before deployment.
+

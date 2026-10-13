@@ -1,6 +1,7 @@
 """Tests — Login (tests 6–9).
 
-6.  Successful login returns access_token, refresh_token, token_type.
+6.  Successful login: service returns access_token + refresh_token; view sets
+    refresh_token as HttpOnly cookie, returns only access_token in body.
 7.  Invalid login (wrong password) raises AuthenticationError.
 8.  Disabled account raises AccountDisabledError (but API returns same 401).
 9.  Safe error responses — same 401 for wrong email and wrong password
@@ -56,7 +57,12 @@ def test_successful_login_stores_refresh_token(user_service, mock_user_repo, sam
 
 @pytest.mark.django_db
 def test_login_view_returns_200_on_success(api_client):
-    """POST /api/v1/auth/login/ returns 200 with tokens on success."""
+    """POST /api/v1/auth/login/ returns 200, access_token in body, refresh_token in cookie.
+
+    With the hybrid auth design:
+    - access_token is in the JSON response body (short-lived, stored in React state).
+    - refresh_token is set as an HttpOnly cookie (kv_refresh) — NOT in the body.
+    """
     fake_tokens = {
         "access_token": "fake.access.token",
         "refresh_token": "fake.refresh.token",
@@ -76,9 +82,14 @@ def test_login_view_returns_200_on_success(api_client):
 
     assert response.status_code == 200
     data = response.json()
+    # Access token is in the body
     assert "access_token" in data
-    assert "refresh_token" in data
+    assert data["access_token"] == "fake.access.token"
     assert data["token_type"] == "Bearer"
+    # Refresh token must NOT be in the body (it is in the HttpOnly cookie)
+    assert "refresh_token" not in data
+    # Refresh token is set as the kv_refresh HttpOnly cookie
+    assert "kv_refresh" in response.cookies
 
 
 # ── 7. Invalid login ──────────────────────────────────────────────────────────

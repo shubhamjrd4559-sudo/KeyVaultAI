@@ -12,6 +12,11 @@ export type Credential = {
   created_at: string;
   updated_at: string;
   last_used_at?: string | null;
+  deleted_at?: string | null;
+};
+
+export type DeletedCredential = Credential & {
+  deleted_at: string;
 };
 
 export type AuthTokens = { access_token: string; refresh_token: string; token_type: string };

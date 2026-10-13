@@ -461,12 +461,13 @@ class TestUserIsolation:
         assert resp_b.json()["security_score"] == 10
 
     def test_credential_path_enforces_ownership(self, client):
-        """When credential_id is supplied, repo.find_by_id must be called
+        """When credential_id is supplied, repo.find_by_id_and_user must be called
         with the authenticated user's user_id, not a client-supplied user_id."""
+        from apps.vault.repositories.credentials import CredentialNotFoundError
         user_a = _make_user(user_id="user-a", email="a@test.com")
 
         mock_repo = MagicMock()
-        mock_repo.find_by_id.return_value = None  # credential not found for user-a
+        mock_repo.find_by_id_and_user.side_effect = CredentialNotFoundError()
 
         with patch("apps.ml_engine.views._get_credential_repo", return_value=mock_repo), \
              patch("apps.ml_engine.views.JWTAuthentication.authenticate", return_value=(user_a, None)):
@@ -478,7 +479,7 @@ class TestUserIsolation:
 
         assert response.status_code == 404
         # Verify the repo was queried with user_a's ID, not user-b
-        mock_repo.find_by_id.assert_called_once_with(
+        mock_repo.find_by_id_and_user.assert_called_once_with(
             credential_id="cred-belongs-to-user-b",
             user_id="user-a",
         )
@@ -516,11 +517,12 @@ class TestPlaintextNonDisclosure:
         real_password = "ThisIsARealPassword!123"
 
         mock_repo = MagicMock()
-        mock_repo.find_by_id.return_value = {
-            "encrypted_password": "ciphertext-blob",
+        mock_repo.find_by_id_and_user.return_value = {
+            "credential_id": "cred-123",
             "security_score": 60,
             "security_level": "strong",
         }
+        mock_repo.get_encrypted_password_for_owner.return_value = "ciphertext-blob"
         mock_repo.find_all_encrypted_for_user.return_value = []
 
         mock_enc = MagicMock()
@@ -541,6 +543,15 @@ class TestPlaintextNonDisclosure:
         # The actual plaintext password must NOT appear in the response
         assert real_password not in body_str
         assert "ciphertext-blob" not in body_str
+        # Verify the secure owner-scoped repository methods were called with the authenticated user
+        mock_repo.find_by_id_and_user.assert_called_once_with(
+            credential_id="cred-123",
+            user_id="user-x",
+        )
+        mock_repo.get_encrypted_password_for_owner.assert_called_once_with(
+            credential_id="cred-123",
+            user_id="user-x",
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────

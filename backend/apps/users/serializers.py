@@ -43,3 +43,23 @@ class LogoutSerializer(serializers.Serializer):
 
 class TokenRefreshSerializer(serializers.Serializer):
     refresh_token = serializers.CharField()
+
+
+class EmailOnlySerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=254)
+
+    def validate_email(self, value: str) -> str:
+        return value.lower().strip()
+
+
+class EmailTokenSerializer(serializers.Serializer):
+    token = serializers.CharField(min_length=20, max_length=256, trim_whitespace=True)
+
+
+class PasswordResetSerializer(EmailTokenSerializer):
+    password = serializers.CharField(
+        min_length=10,
+        max_length=128,
+        write_only=True,
+        trim_whitespace=False,
+    )

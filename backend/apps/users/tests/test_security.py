@@ -16,6 +16,7 @@ from apps.audit.services.audit import AuditEvent
 from apps.users.authentication import AuthenticatedUser
 from apps.users.services.rate_limiting import (
     NullRateLimiter,
+    RateLimitUnavailableError,
     RATE_LIMIT_LOGIN,
     RATE_LIMIT_REGISTER,
     RedisRateLimiter,
@@ -160,15 +161,17 @@ def test_audit_never_contains_password(user_service, mock_user_repo, mock_audit)
 
 # ── 16. Rate-limit abstraction behaviour ─────────────────────────────────────
 
-def test_null_rate_limiter_always_allows(null_rate_limiter):
-    """NullRateLimiter.check_and_record always returns True."""
-    for _ in range(50):
-        assert null_rate_limiter.check_and_record(RATE_LIMIT_LOGIN, "any-ip") is True
+def test_null_rate_limiter_blocks_when_redis_is_unavailable():
+    """Fail-closed fallback never permits an un-rate-limited sensitive action."""
+    limiter = NullRateLimiter()
+    with pytest.raises(RateLimitUnavailableError):
+        limiter.check_and_record(RATE_LIMIT_LOGIN, "any-ip")
 
 
-def test_null_rate_limiter_record_is_noop(null_rate_limiter):
-    """NullRateLimiter.record does not raise."""
-    null_rate_limiter.record(RATE_LIMIT_REGISTER, "any-ip")  # should not raise
+def test_null_rate_limiter_raises_for_legacy_calls():
+    limiter = NullRateLimiter()
+    with pytest.raises(RateLimitUnavailableError):
+        limiter.record(RATE_LIMIT_REGISTER, "any-ip")
 
 
 def test_redis_rate_limiter_blocks_when_limit_exceeded():
@@ -176,10 +179,9 @@ def test_redis_rate_limiter_blocks_when_limit_exceeded():
     mock_redis = MagicMock()
     limiter = RedisRateLimiter(mock_redis)
 
-    # Simulate 10 existing attempts (at the limit for RATE_LIMIT_LOGIN)
-    mock_redis.get.return_value = b"10"
-
-    allowed = limiter.is_allowed(RATE_LIMIT_LOGIN, "192.168.1.1")
+    # Atomic Lua counter sees the 11th attempt, over the configured limit.
+    mock_redis.eval.return_value = 0
+    allowed = limiter.check_and_record(RATE_LIMIT_LOGIN, "192.168.1.1")
     assert allowed is False
 
 
@@ -188,25 +190,26 @@ def test_redis_rate_limiter_allows_below_limit():
     mock_redis = MagicMock()
     limiter = RedisRateLimiter(mock_redis)
 
-    mock_redis.get.return_value = b"5"  # below login limit of 10
-
-    allowed = limiter.is_allowed(RATE_LIMIT_LOGIN, "192.168.1.1")
+    mock_redis.eval.return_value = 1
+    allowed = limiter.check_and_record(RATE_LIMIT_LOGIN, "192.168.1.1")
     assert allowed is True
 
 
-def test_redis_rate_limiter_record_uses_pipeline():
-    """RedisRateLimiter.record uses a pipeline for atomic INCR + EXPIRE."""
+def test_redis_rate_limiter_uses_atomic_check_and_record():
+    """RedisRateLimiter performs the check and increment in one Lua operation."""
     mock_redis = MagicMock()
-    mock_pipe = MagicMock()
-    mock_redis.pipeline.return_value = mock_pipe
+    mock_redis.eval.return_value = 1
 
     limiter = RedisRateLimiter(mock_redis)
-    limiter.record(RATE_LIMIT_LOGIN, "192.168.1.1")
+    limiter.check_and_record(RATE_LIMIT_LOGIN, "192.168.1.1")
+    mock_redis.eval.assert_called_once()
 
-    mock_redis.pipeline.assert_called_once()
-    mock_pipe.incr.assert_called_once()
-    mock_pipe.expire.assert_called_once()
-    mock_pipe.execute.assert_called_once()
+
+def test_redis_failure_blocks_sensitive_action():
+    mock_redis = MagicMock()
+    mock_redis.eval.side_effect = OSError("redis unavailable")
+    with pytest.raises(RateLimitUnavailableError):
+        RedisRateLimiter(mock_redis).check_and_record(RATE_LIMIT_LOGIN, "192.168.1.1")
 
 
 def test_rate_limiter_blocks_user_service_on_limit(

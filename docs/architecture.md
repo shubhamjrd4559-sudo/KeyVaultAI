@@ -1,9 +1,9 @@
-# Architecture — Milestones 1 & 2
+# Architecture — Current repository implementation
 
 ```text
 Client → Django REST API (/api/v1)
               ├→ apps.common   — health probe
-              ├→ apps.users    — authentication (JWT + Argon2id + MongoDB)
+              ├→ apps.users    — verified email authentication, password recovery, JWT + Argon2id
               ├→ apps.audit    — audit event logging
               ├→ apps.vault    — owner-scoped AES-256-GCM credentials
               ├→ apps.security — deterministic security analysis (M5)
@@ -11,8 +11,13 @@ Client → Django REST API (/api/v1)
               ├→ MongoDB Atlas (primary persistent store)
               │     ├─ users collection        (user accounts)
               │     ├─ refresh_tokens collection (JTI revocation)
+              │     ├─ email_verification_tokens (hashed, expiring, single-use tokens)
+              │     ├─ password_reset_tokens (hashed, expiring, single-use tokens)
               │     └─ audit_events collection   (security event log)
-              └→ Redis (rate limiting, Celery broker, future caching)
+              └→ TLS Redis (atomic rate limiting, Celery broker/result backend)
+
+Next.js frontend → Vercel (`frontend/` root directory)
+Celery Worker + Beat → separate long-running container services
 ```
 
 ## Layer architecture
@@ -35,7 +40,7 @@ Service (apps/users/services/users.py)
     │     JWT generation and validation
     │
     ├─→ RateLimiter (apps/users/services/rate_limiting.py)
-    │     Redis-backed (NullRateLimiter if Redis unavailable)
+    │     Atomic Redis-backed; rate-limited actions fail closed if unavailable
     │
     └─→ AuditService (apps/audit/services/audit.py)
           Safe metadata logging to logger + MongoDB
@@ -45,8 +50,10 @@ Service (apps/users/services/users.py)
 
 ```
 Register → Serializer → Normalize email → Check duplicate
-         → Argon2id hash → MongoDB insert → Audit REGISTER
-         → Safe user response (no password_hash)
+         → Argon2id hash → pending account insert → hashed email token
+         → SMTP verification message → Safe pending-account response
+
+Verify   → Consume unexpired single-use token hash → mark account verified
 
 Login    → Rate limit → find_by_email → Argon2id verify (always runs)
          → Generate JWT access + refresh → Store JTI → Update last_login
@@ -70,7 +77,7 @@ Refresh  → Decode refresh JWT → Validate JTI in MongoDB
 
 ### Redis (operational data only)
 
-- Rate-limiting counters (INCR + EXPIRE)
+- Rate-limiting counters (atomic Lua increment/check with expiry)
 - Celery broker and result backend
 - Never used for persistent credential storage
 
@@ -88,6 +95,16 @@ Refresh  → Decode refresh JWT → Validate JTI in MongoDB
 | `apps.audit` | Security event logging |
 | `apps.vault` | Encrypted, owner-scoped credential storage |
 | `apps.security` | JWT-scoped score summary, safe alerts, and same-user reuse analysis |
+
+## Deployment layout
+
+- Vercel project root is set to `frontend/`; `NEXT_PUBLIC_API_BASE_URL` is a public build-time API URL, never a secret.
+- A container host runs the Django web service, a separate Celery Worker, and a separate Celery Beat service from the backend image. The web process binds `0.0.0.0:$PORT`.
+- Run one Beat scheduler instance. Mount persistent storage at `/var/run/celerybeat` for its schedule file; Compose defines this volume for local use, and the container host must attach an equivalent persistent volume to the Beat service.
+- Railway does not run `docker-compose.yml` directly; create one Railway service for each required long-running process and set its start command and service variables in the dashboard.
+- Use an Upstash TCP Redis connection URL with TLS (`rediss://`) for Python Redis and Celery. Do not use the Upstash REST URL/token as `REDIS_URL`.
+- Atlas connections use TLS. Production checks require explicit hosts/origins, HTTPS frontend origin, SMTP TLS, and TLS Redis.
+- MongoDB indexes are not created on application startup. Use the read-only preflight in `ensure_mongodb_indexes`; do not pass `--apply` without separate approval.
 
 ## Planned apps (future milestones)
 

@@ -55,8 +55,10 @@ KeyVaultAI is a secure, modern password manager built as a full-stack B.Tech pro
 
 ### ⚙️ Background Maintenance & Performance
 - **Soft Deletion & Recovery**: 72-hour restore window for soft-deleted credentials.
-- **Automated Celery Cleanup**: Scheduled background task purges credentials soft-deleted for longer than 48 hours.
-- **Redis Rate Limiting**: Sliding-window rate limiting on authentication and password reveal endpoints.
+- **Automated Celery Cleanup**: Separate Celery Worker and Beat services purge credentials after the 72-hour recovery window.
+- **Email Account Flows**: SMTP-backed verification and password reset use hashed, expiring, single-use tokens.
+- **Fail-closed Rate Limits**: Rate-limited actions are blocked when Redis cannot enforce limits.
+- **Redis Rate Limiting**: Atomic fixed-window limits on authentication and sensitive vault endpoints.
 
 ---
 
@@ -125,7 +127,7 @@ flowchart TD
 | **Machine Learning** | Scikit-Learn, NumPy | Numerical feature extraction & logistic regression risk model |
 | **Database** | MongoDB Atlas (via PyMongo) | Cloud document store for encrypted credentials and users |
 | **Cache & Broker** | Redis / Upstash Redis | Rate limiting counters, token revocation, Celery message broker |
-| **Background Worker**| Celery 5.4 | Periodic 48-hour soft-deleted credential purge |
+| **Background Worker**| Celery 5.4 | Separate Worker and Beat services; periodic 72-hour purge |
 
 ---
 
@@ -214,7 +216,7 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 ### 5. Running Background Workers (Optional)
-To test the 48-hour automated cleanup task locally:
+To test the 72-hour automated cleanup task locally:
 ```bash
 # In backend directory with .venv active:
 celery -A config worker --loglevel=INFO
@@ -282,9 +284,9 @@ pytest -v
 
 ## ⚠️ Known Limitations
 
-- **Email Infrastructure**: Password reset and email verification views are currently scaffolded stubs (`HTTP 503`) awaiting an email delivery service.
+- **Email Configuration**: Supply SMTP settings and the actual HTTPS frontend URL through the backend environment. No provider or credentials are bundled.
 - **Token Storage**: JWT tokens are stored in `sessionStorage`. Migration to `HttpOnly; Secure; SameSite=Strict` cookies is planned.
-- **Background Cleanup**: The automated 48-hour purge requires Celery Worker and Beat processes to be actively running.
+- **Background Cleanup**: The automated 72-hour purge requires Celery Worker and Beat processes to be actively running.
 - **Free-Trial Limits**: Free-trial storage and credential quotas are configurable and will be finalized after architecture review *(Status: Planned)*.
 
 ---

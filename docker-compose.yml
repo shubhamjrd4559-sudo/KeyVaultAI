@@ -27,6 +27,20 @@ services:
       redis:
         condition: service_healthy
 
+  celery-beat:
+    build:
+      context: ./backend
+    command: celery -A config beat --loglevel=INFO --schedule=/var/run/celerybeat/schedule
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+      - celery_beat_data:/var/run/celerybeat
+    depends_on:
+      redis:
+        condition: service_healthy
+
   redis:
     image: redis:7.4-alpine
     command: redis-server --appendonly no
@@ -37,3 +51,6 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+volumes:
+  celery_beat_data:
