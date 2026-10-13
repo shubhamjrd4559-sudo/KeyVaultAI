@@ -8,7 +8,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![MongoDB Atlas](https://img.shields.io/badge/MongoDB_Atlas-Cloud-47A248.svg?logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
 [![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.5%2B-F7931E.svg?logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
-[![Tests](https://img.shields.io/badge/Pytest-233%20Passed-brightgreen.svg?logo=pytest&logoColor=white)](https://pytest.org/)
+[![Tests](https://img.shields.io/badge/Pytest-244%20Passed-brightgreen.svg?logo=pytest&logoColor=white)](https://pytest.org/)
 
 KeyVaultAI is a secure, modern password manager built as a full-stack B.Tech project. It enables users to store credentials securely using authenticated server-side encryption, analyze password strength with a deterministic security engine, detect dangerous password reuse, and predict credential risk using machine learning.
 
@@ -30,8 +30,10 @@ KeyVaultAI is a secure, modern password manager built as a full-stack B.Tech pro
 
 ### 🔑 Authentication & Security
 - **User Authentication**: Secure user registration, login, and logout.
+- **Hybrid Token Security**: Access tokens are kept in JavaScript memory only (never written to `localStorage` or `sessionStorage`); rotating refresh tokens are secured in an `HttpOnly; Secure; SameSite=Strict` cookie (`kv_refresh`) scoped strictly to auth endpoints with cross-origin credentials.
 - **Argon2id Hashing**: Account passwords hashed using OWASP-recommended parameters ($t=3$, $m=64\text{ MB}$, $p=4$) with timing-attack-safe dummy verification.
-- **JWT Architecture**: Stateless 5-minute access tokens and rotating 30-day refresh tokens with JTI invalidation and revocation tracking.
+- **Email Verification & Self-Service Reset**: Single-use, SHA-256-hashed tokens with URL hash fragment extraction (`#token=...`) ensuring tokens never appear in server referrer headers or browser history.
+- **Legacy Account Safety**: Unverified or legacy accounts fail closed at login and can request instant re-verification without modifying password hashes.
 - **User Isolation (IDOR / BOLA Protected)**: Server-side ownership checks derive user identity strictly from verified JWT claims. Users can never view or manipulate another user's credentials.
 
 ### 🗄️ Password Vault
@@ -93,7 +95,7 @@ flowchart TD
     subgraph Background ["Background Processing"]
         SoftDel["🗑️ Soft-Deleted Item\n(deleted_at timestamp)"]
         Beat["⏰ Celery Beat Scheduler"]
-        Worker["⚙️ Celery Worker\n(48-Hour Cleanup Task)"]
+        Worker["⚙️ Celery Worker\n(72-Hour Cleanup Task)"]
         Purge(["❌ Permanent Deletion"])
     end
 
@@ -137,15 +139,20 @@ All API endpoints are under `/api/v1/`.
 
 | Group | Method | Endpoint | Description |
 |---|---|---|---|
-| **Auth** | `POST` | `/api/v1/auth/register/` | Register a new user account |
-| **Auth** | `POST` | `/api/v1/auth/login/` | Login and receive access + refresh token |
-| **Auth** | `POST` | `/api/v1/auth/token/refresh/` | Rotate refresh token and get a new pair |
-| **Auth** | `POST` | `/api/v1/auth/logout/` | Revoke active refresh token |
+| **Auth** | `POST` | `/api/v1/auth/register/` | Register a new user account (pending verification) |
+| **Auth** | `POST` | `/api/v1/auth/verify-email/` | Verify user email with single-use hashed token |
+| **Auth** | `POST` | `/api/v1/auth/resend-verification/` | Request a new email verification link |
+| **Auth** | `POST` | `/api/v1/auth/login/` | Authenticate; returns access token & sets HttpOnly cookie |
+| **Auth** | `POST` | `/api/v1/auth/token/refresh/` | Rotate refresh cookie & issue new access token |
+| **Auth** | `POST` | `/api/v1/auth/logout/` | Revoke refresh token and clear auth cookie |
+| **Auth** | `POST` | `/api/v1/auth/forgot-password/` | Request password reset email link |
+| **Auth** | `POST` | `/api/v1/auth/reset-password/` | Reset account password using single-use token |
 | **Vault** | `GET` | `/api/v1/vault/credentials/` | List all active credentials (metadata only) |
 | **Vault** | `POST` | `/api/v1/vault/credentials/` | Encrypt and store a new credential |
 | **Vault** | `POST` | `/api/v1/vault/credentials/<id>/reveal/` | Decrypt and reveal password (owner only) |
 | **Vault** | `POST` | `/api/v1/vault/credentials/<id>/copy/` | Decrypt password for clipboard (audited) |
-| **Vault** | `POST` | `/api/v1/vault/credentials/<id>/soft-delete/` | Move credential to Recently Deleted |
+| **Vault** | `POST` | `/api/v1/vault/credentials/<id>/soft-delete/` | Move credential to Recently Deleted (72h window) |
+| **Vault** | `GET` | `/api/v1/vault/recently-deleted/` | List soft-deleted credentials within 72h window |
 | **Vault** | `POST` | `/api/v1/vault/credentials/<id>/restore/` | Restore soft-deleted credential |
 | **Vault** | `DELETE`| `/api/v1/vault/credentials/<id>/permanent-delete/` | Permanently remove credential |
 | **Security**| `GET` | `/api/v1/security/summary/` | Aggregate security score and health stats |
@@ -229,12 +236,13 @@ celery -A config beat --loglevel=INFO
 
 The project includes unit, integration, and security isolation tests:
 
-- **Backend Pytest Suite**: **233 passed / 0 failed**
-  - **Vault & Encryption (`apps/vault/`)**: 75 tests (AES-256-GCM roundtrips, tampering rejection, fresh nonces, 48h cleanup)
+- **Backend Pytest Suite**: **244 passed / 0 failed**
+  - **Vault & Encryption (`apps/vault/`)**: 75 tests (AES-256-GCM roundtrips, tampering rejection, fresh nonces, 72h cleanup)
   - **User Isolation (IDOR/BOLA)**: **33 dedicated tests** proving cross-user access is denied under all tampering scenarios
   - **Machine Learning Engine (`apps/ml_engine/`)**: 72 tests (feature extraction, LogisticRegression predictions, plaintext non-disclosure)
   - **Security Engine (`apps/security/`)**: 46 tests (deterministic scoring, character variety, in-memory reuse detection)
-  - **Authentication (`apps/users/`)**: 40 tests (Argon2id hashing, timing attack safety, token rotation/revocation)
+  - **Authentication & Email Flows (`apps/users/`)**: 63 tests (Argon2id hashing, timing attack safety, hybrid cookie auth, token rotation/revocation, single-use hashed verification & reset tokens, legacy accounts)
+  - **Common & Infrastructure (`apps/common/`)**: 3 tests (health probes, duplicate preflight index management command)
 - **Django System Check**: 0 issues identified
 - **Frontend Typecheck (`npx tsc --noEmit`)**: 0 errors
 - **Frontend Production Build (`next build`)**: Compiled successfully
@@ -271,7 +279,7 @@ pytest -v
 - [x] **Milestone 0**: Repository setup, architecture planning, Docker Compose
 - [x] **Milestone 1**: Django REST Framework baseline & health probes
 - [x] **Milestone 2**: Authentication (Argon2id, JWT rotation, audit logging, rate limiting)
-- [x] **Milestone 3**: Secure Vault (AES-256-GCM encryption, repositories, soft delete, Celery 48h purge)
+- [x] **Milestone 3**: Secure Vault (AES-256-GCM encryption, repositories, soft delete, Celery 72h purge)
 - [x] **Milestone 4**: Frontend Integration (Next.js 15, sticky-notes UI, radiant borders, auth modal)
 - [x] **Milestone 5**: Security Engine (Deterministic scoring, strength levels, in-memory reuse detection)
 - [x] **Milestone 6**: Machine Learning Engine (Scikit-Learn LogisticRegression, risk prediction, privacy guarantees)
@@ -285,7 +293,7 @@ pytest -v
 ## ⚠️ Known Limitations
 
 - **Email Configuration**: Supply SMTP settings and the actual HTTPS frontend URL through the backend environment. No provider or credentials are bundled.
-- **Token Storage**: JWT tokens are stored in `sessionStorage`. Migration to `HttpOnly; Secure; SameSite=Strict` cookies is planned.
+- **Token Storage**: Hybrid model implemented — access tokens reside in JavaScript memory only; refresh tokens are stored in `HttpOnly; Secure; SameSite=Strict` cookies (`kv_refresh`) with automated rotation.
 - **Background Cleanup**: The automated 72-hour purge requires Celery Worker and Beat processes to be actively running.
 - **Free-Trial Limits**: Free-trial storage and credential quotas are configurable and will be finalized after architecture review *(Status: Planned)*.
 
